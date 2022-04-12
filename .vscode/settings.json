@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "idt.h": "c",
+        "interface.h": "c"
+    }
+}

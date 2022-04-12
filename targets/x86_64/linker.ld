@@ -2,14 +2,14 @@ ENTRY(start)
 
 SECTIONS
 {
-    . = 1M
+    . = 1M;
 
-    .boot:
+    .boot :
     {
         KEEP(*(.boot_header))
     }
 
-    text:
+    text :
     {
         *(.text)
     }
