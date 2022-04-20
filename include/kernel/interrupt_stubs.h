@@ -40,13 +40,4 @@ IRQ(0x2A);
 IRQ(0x2B);
 IRQ(0x2C);
 
-/*
-MACRO(1);
-MACRO(2);
-MACRO(3);
-MACRO(4);
-MACRO(5);
-MACRO(6);
-MACRO(7);*/
-
 #endif

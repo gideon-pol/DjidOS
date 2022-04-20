@@ -12,9 +12,11 @@ void KeyboardDriver::Initialize(){
 void KeyboardDriver::HandleInterrupt(){
     uint8_t scanCode = IO::In(0x60);
 
-    Interface::Clear();
+    //Interface::Clear();
     KeyCode code = KeyCode::FromScanCode(scanCode);
 
     char d = code.ToChar();
-    Interface::Print(&d, 0, 1);
+    Interface::Print(&d, 7, 1);
+
+    while(IO::In(0x64) & 0x1) IO::In(0x60);
 }

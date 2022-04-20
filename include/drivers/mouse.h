@@ -12,12 +12,16 @@ public:
     virtual void HandleInterrupt() = 0;
 };*/
 
+enum MouseButton { Left, Right, Middle, Four, Five };
+
 class MouseDriver// : public Driver 
 {
 public:
     MouseDriver(){};
-     void Initialize();
+    void Initialize();
     void HandleInterrupt();
+private:
+    uint8_t packetNumber = 0;
 };
 
 extern MouseDriver mouseDriver;
