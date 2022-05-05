@@ -12,7 +12,6 @@ void KeyboardDriver::Initialize(){
 void KeyboardDriver::HandleInterrupt(){
     uint8_t scanCode = IO::In(0x60);
 
-    //Interface::Clear();
     KeyCode code = KeyCode::FromScanCode(scanCode);
 
     char d = code.ToChar();

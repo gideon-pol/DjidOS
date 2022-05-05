@@ -1,5 +1,6 @@
 SRCDIR := src
 BUILDDIR := build
+CFLAGS = -c -mcmodel=large -fno-rtti -ffreestanding
 
 x86_64_asm_source_files := $(shell find $(SRCDIR) -name *.asm)
 x86_64_asm_object_files := $(patsubst $(SRCDIR)/%.asm, $(BUILDDIR)/x86_64/%.o, $(x86_64_asm_source_files))
@@ -14,15 +15,15 @@ x86_64_object_files := $(x86_64_cpp_object_files) $(x86_64_asm_object_files) $(B
 
 $(BUILDDIR)/x86_64/kernel/interrupt_stubs.o: $(SRCDIR)/kernel/interrupt_stubs.cpp include/kernel/interrupt_stubs.h
 	mkdir -p $(dir $@) && \
-	g++ -c -std=c++17 -fpermissive -mno-red-zone -mgeneral-regs-only -fno-rtti -I include -ffreestanding $(SRCDIR)/kernel/interrupt_stubs.cpp -o $@
+	g++ $(CFLAGS) -fpermissive -mno-red-zone -mgeneral-regs-only -I include $(SRCDIR)/kernel/interrupt_stubs.cpp -o $@
 
 $(kernel_object_files): $(BUILDDIR)/kernel/%.o : $(SRCDIR)/kernel/%.cpp include/*.h
 	mkdir -p $(dir $@) && \
-	g++ -c -std=c++17 -fno-rtti -I include -ffreestanding $(patsubst $(BUILDDIR)/kernel/%.o, $(SRCDIR)/kernel/%.cpp, $@) -o $@
+	g++ $(CFLAGS) -I include $(patsubst $(BUILDDIR)/kernel/%.o, $(SRCDIR)/kernel/%.cpp, $@) -o $@
 
 $(x86_64_cpp_object_files): $(BUILDDIR)/x86_64/%.o : $(SRCDIR)/%.cpp include/*.h
 	mkdir -p $(dir $@) && \
-	g++ -c -std=c++17 -fno-rtti -I include -ffreestanding $(patsubst $(BUILDDIR)/x86_64/%.o, $(SRCDIR)/%.cpp, $@) -o $@
+	g++ $(CFLAGS) -I include $(patsubst $(BUILDDIR)/x86_64/%.o, $(SRCDIR)/%.cpp, $@) -o $@
 
 $(x86_64_asm_object_files): $(BUILDDIR)/x86_64/%.o : $(SRCDIR)/%.asm
 	mkdir -p $(dir $@) && \
@@ -31,6 +32,6 @@ $(x86_64_asm_object_files): $(BUILDDIR)/x86_64/%.o : $(SRCDIR)/%.asm
 .PHONY: build-x86_64
 build-x86_64: $(x86_64_object_files)
 	mkdir -p dist/x86_64 && \
-	ld -n -o dist/x86_64/kernel.bin -T targets/x86_64/linker.ld $(x86_64_object_files) && \
+	ld -n --no-relax -o dist/x86_64/kernel.bin -T targets/x86_64/linker.ld $(x86_64_object_files) && \
 	cp dist/x86_64/kernel.bin targets/x86_64/iso/boot/kernel.bin && \
 	grub-mkrescue /usr/lib/grub/i386-pc -o dist/x86_64/kernel.iso targets/x86_64/iso

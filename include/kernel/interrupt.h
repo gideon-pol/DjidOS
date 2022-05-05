@@ -46,10 +46,6 @@ struct InterruptHandler{
     void(*handler)();
 } __attribute__((packed));
 
-void DivByZeroHandler();
-void PageFaultHandler();
-void UnhandledInterrupt();
-
 namespace InterruptManager{
     void Initialize();
     void RemapPIC();

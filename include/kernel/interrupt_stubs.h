@@ -5,7 +5,6 @@
 
 struct interrupt_frame;
 
-
 #define IRQ(index)                                    \
 __attribute__((interrupt)) void Handler##index(struct interrupt_frame* frame);                            \
 

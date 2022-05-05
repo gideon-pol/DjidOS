@@ -21,7 +21,6 @@ public:
     void Initialize();
     void HandleInterrupt();
 private:
-    uint8_t packetNumber = 0;
 };
 
 extern MouseDriver mouseDriver;

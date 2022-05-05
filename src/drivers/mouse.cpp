@@ -3,7 +3,6 @@
 #include <kernel/interrupt.h>
 #include <interface.h>
 
-
 MouseDriver mouseDriver = MouseDriver();
 
 void MouseDriver::Initialize(){
@@ -23,19 +22,24 @@ void MouseDriver::Initialize(){
 
     IO::In(0x60);
 
+    //Interface::Print((void(*)())&MouseDriver::HandleInterrupt, 10);
+
     InterruptManager::SetHandler(0x2C, (void (*)())&MouseDriver::HandleInterrupt);
-}
+} 
 
 void MouseDriver::HandleInterrupt(){
     uint8_t status = IO::In(0x64);
     uint8_t buffer[3];
+    uint8_t packetNumber = 0;
+
     while(status & 0x1){
         uint8_t packet = IO::In(0x60);
         if(status & 0x20){
+            
             buffer[packetNumber] = packet;
             packetNumber = (packetNumber + 1) % 3;
  
-            if(packetNumber == 0){
+            if(packetNumber == 0){ 
                 Interface::PrintByte(buffer[0], 3);
                 Interface::PrintByte(buffer[1], 4);
                 Interface::PrintByte(buffer[2], 5);

@@ -1,5 +1,6 @@
 #include <kernel/interrupt.h>
 #include <drivers/keyboard.h>
+#include <kernel/memory.h>
 
 void DivByZeroHandler(){
     Interface::Clear();
@@ -31,7 +32,6 @@ InterruptTableEntry::InterruptTableEntry(void(*handler)(struct interrupt_frame* 
 }
 
 void InterruptTableEntry::SetOffset(void(*handler)(struct interrupt_frame* frame)){
-
     offset_0 = (uint16_t)(((uint64_t)handler & 0x000000000000ffff));
     offset_1 = (uint16_t)(((uint64_t)handler & 0x00000000ffff0000) >> 16);
     offset_2 = (uint32_t)(((uint64_t)handler & 0xffffffff00000000) >> 32);
@@ -52,6 +52,47 @@ namespace InterruptManager{
             *(uint8_t*)(&idt + i) = 0;
         }
 
+        SetInterruptEntry(0x0, InterruptTableEntry(&Handler0x0), &DivByZeroHandler);
+        SetInterruptEntry(0x1, InterruptTableEntry(&Handler0x1), &UnhandledInterrupt);
+        SetInterruptEntry(0x2, InterruptTableEntry(&Handler0x2), &UnhandledInterrupt);
+        SetInterruptEntry(0x3, InterruptTableEntry(&Handler0x3), &UnhandledInterrupt);
+        SetInterruptEntry(0x4, InterruptTableEntry(&Handler0x4), &UnhandledInterrupt);
+        SetInterruptEntry(0x5, InterruptTableEntry(&Handler0x5), &UnhandledInterrupt);
+        SetInterruptEntry(0x6, InterruptTableEntry(&Handler0x6), &UnhandledInterrupt);
+        SetInterruptEntry(0x7, InterruptTableEntry(&Handler0x7), &UnhandledInterrupt);
+        SetInterruptEntry(0x8, InterruptTableEntry(&Handler0x8), &UnhandledInterrupt);
+        SetInterruptEntry(0x9, InterruptTableEntry(&Handler0x9), &UnhandledInterrupt);
+        SetInterruptEntry(0xA, InterruptTableEntry(&Handler0xA), &UnhandledInterrupt);
+        SetInterruptEntry(0xB, InterruptTableEntry(&Handler0xB), &UnhandledInterrupt);
+        SetInterruptEntry(0xC, InterruptTableEntry(&Handler0xC), &UnhandledInterrupt);
+        SetInterruptEntry(0xD, InterruptTableEntry(&Handler0xD), &UnhandledInterrupt);
+        SetInterruptEntry(0xE, InterruptTableEntry(&Handler0xE), &PageFaultHandler);
+        SetInterruptEntry(0xF, InterruptTableEntry(&Handler0xF), &UnhandledInterrupt);
+
+        SetInterruptEntry(0x20, InterruptTableEntry(&Handler0x20), &UnhandledInterrupt);
+        SetInterruptEntry(0x21, InterruptTableEntry(&Handler0x21), &UnhandledInterrupt);
+        SetInterruptEntry(0x22, InterruptTableEntry(&Handler0x22), &UnhandledInterrupt);
+        SetInterruptEntry(0x23, InterruptTableEntry(&Handler0x23), &UnhandledInterrupt);
+        SetInterruptEntry(0x24, InterruptTableEntry(&Handler0x24), &UnhandledInterrupt);
+        SetInterruptEntry(0x25, InterruptTableEntry(&Handler0x25), &UnhandledInterrupt);
+        SetInterruptEntry(0x26, InterruptTableEntry(&Handler0x26), &UnhandledInterrupt);
+        SetInterruptEntry(0x27, InterruptTableEntry(&Handler0x27), &UnhandledInterrupt);
+        SetInterruptEntry(0x28, InterruptTableEntry(&Handler0x28), &UnhandledInterrupt);
+        SetInterruptEntry(0x29, InterruptTableEntry(&Handler0x29), &UnhandledInterrupt);
+        SetInterruptEntry(0x2A, InterruptTableEntry(&Handler0x2A), &UnhandledInterrupt);
+        SetInterruptEntry(0x2B, InterruptTableEntry(&Handler0x2B), &UnhandledInterrupt);
+        SetInterruptEntry(0x2C, InterruptTableEntry(&Handler0x2C), &UnhandledInterrupt);
+
+        struct idt_ptr{
+            uint16_t limit;
+            uint64_t base;
+        } __attribute__((packed));
+
+        struct idt_ptr ptr = {limit, base};
+        asm volatile("lidt %0" :: "m"(ptr));
+    }
+
+    void RemapPIC(){
         uint8_t a1, a2;
         a1 = IO::In(PIC1_DATA_PORT);
         IO::Wait();
@@ -72,73 +113,7 @@ namespace InterruptManager{
 
         IO::Out(PIC1_DATA_PORT, a1);
         IO::Out(PIC2_DATA_PORT, a2);
-
-        SetInterruptEntry(0x0, InterruptTableEntry(&Handler0x0), &DivByZeroHandler);
-        SetInterruptEntry(0x1, InterruptTableEntry(&Handler0x1), &UnhandledInterrupt);
-        SetInterruptEntry(0x2, InterruptTableEntry(&Handler0x2), &UnhandledInterrupt);
-        SetInterruptEntry(0x3, InterruptTableEntry(&Handler0x3), &UnhandledInterrupt);
-        SetInterruptEntry(0x4, InterruptTableEntry(&Handler0x4), &UnhandledInterrupt);
-        SetInterruptEntry(0x5, InterruptTableEntry(&Handler0x5), &UnhandledInterrupt);
-        SetInterruptEntry(0x6, InterruptTableEntry(&Handler0x6), &UnhandledInterrupt);
-        SetInterruptEntry(0x7, InterruptTableEntry(&Handler0x7), &UnhandledInterrupt);
-        SetInterruptEntry(0x8, InterruptTableEntry(&Handler0x8), &UnhandledInterrupt);
-        SetInterruptEntry(0x9, InterruptTableEntry(&Handler0x9), &UnhandledInterrupt);
-        SetInterruptEntry(0xA, InterruptTableEntry(&Handler0xA), &UnhandledInterrupt);
-        SetInterruptEntry(0xB, InterruptTableEntry(&Handler0xB), &UnhandledInterrupt);
-        SetInterruptEntry(0xC, InterruptTableEntry(&Handler0xC), &UnhandledInterrupt);
-        SetInterruptEntry(0xD, InterruptTableEntry(&Handler0xD), &UnhandledInterrupt);
-        SetInterruptEntry(0xE, InterruptTableEntry(&Handler0xE), &PageFaultHandler);
-        SetInterruptEntry(0xF, InterruptTableEntry(&Handler0xF), &UnhandledInterrupt);
-
-/*
-        SetInterruptEntry(0x10, InterruptTableEntry(&Handler0x10), &UnhandledInterrupt);
-        SetInterruptEntry(0x11, InterruptTableEntry(&Handler0x11), &UnhandledInterrupt);
-        SetInterruptEntry(0x12, InterruptTableEntry(&Handler0x12), &UnhandledInterrupt);
-        SetInterruptEntry(0x13, InterruptTableEntry(&Handler0x13), &UnhandledInterrupt);
-        SetInterruptEntry(0x14, InterruptTableEntry(&Handler0x14), &UnhandledInterrupt);
-        SetInterruptEntry(0x15, InterruptTableEntry(&Handler0x15), &UnhandledInterrupt);
-        SetInterruptEntry(0x16, InterruptTableEntry(&Handler0x16), &UnhandledInterrupt);
-        SetInterruptEntry(0x17, InterruptTableEntry(&Handler0x17), &UnhandledInterrupt);
-        SetInterruptEntry(0x18, InterruptTableEntry(&Handler0x18), &UnhandledInterrupt);
-        SetInterruptEntry(0x19, InterruptTableEntry(&Handler0x19), &UnhandledInterrupt);
-        SetInterruptEntry(0x1A, InterruptTableEntry(&Handler0x1A), &UnhandledInterrupt);
-        SetInterruptEntry(0x1B, InterruptTableEntry(&Handler0x1B), &UnhandledInterrupt);
-        SetInterruptEntry(0x1C, InterruptTableEntry(&Handler0x1C), &UnhandledInterrupt);
-        SetInterruptEntry(0x1D, InterruptTableEntry(&Handler0x1D), &UnhandledInterrupt);
-        SetInterruptEntry(0x1E, InterruptTableEntry(&Handler0x1E), &UnhandledInterrupt);
-        SetInterruptEntry(0x1F, InterruptTableEntry(&Handler0x1F), &UnhandledInterrupt);*/
-
-        SetInterruptEntry(0x20, InterruptTableEntry(&Handler0x20), &UnhandledInterrupt);
-        SetInterruptEntry(0x21, InterruptTableEntry(&Handler0x21), &UnhandledInterrupt);
-        SetInterruptEntry(0x22, InterruptTableEntry(&Handler0x22), &UnhandledInterrupt);
-        SetInterruptEntry(0x23, InterruptTableEntry(&Handler0x23), &UnhandledInterrupt);
-        SetInterruptEntry(0x24, InterruptTableEntry(&Handler0x24), &UnhandledInterrupt);
-        SetInterruptEntry(0x25, InterruptTableEntry(&Handler0x25), &UnhandledInterrupt);
-        SetInterruptEntry(0x26, InterruptTableEntry(&Handler0x26), &UnhandledInterrupt);
-        SetInterruptEntry(0x27, InterruptTableEntry(&Handler0x27), &UnhandledInterrupt);
-        SetInterruptEntry(0x28, InterruptTableEntry(&Handler0x28), &UnhandledInterrupt);
-        SetInterruptEntry(0x29, InterruptTableEntry(&Handler0x29), &UnhandledInterrupt);
-        SetInterruptEntry(0x2A, InterruptTableEntry(&Handler0x2A), &UnhandledInterrupt);
-        SetInterruptEntry(0x2B, InterruptTableEntry(&Handler0x2B), &UnhandledInterrupt);
-        SetInterruptEntry(0x2C, InterruptTableEntry(&Handler0x2C), &UnhandledInterrupt);
-
-/*
-        SetInterruptEntry(0x2D, InterruptTableEntry(&Handler0x2D), &UnhandledInterrupt);
-        SetInterruptEntry(0x2E, InterruptTableEntry(&Handler0x2E), &UnhandledInterrupt);
-        SetInterruptEntry(0x2F, InterruptTableEntry(&Handler0x2F), &UnhandledInterrupt);*/
-        //idt[0x21] = InterruptTableEntry((void (*)(struct interrupt_frame* frame)) &KeyboardInterrupt);
-
-
-        struct idt_ptr{
-            uint16_t limit;
-            uint64_t base;
-        } __attribute__((packed));
-
-        struct idt_ptr ptr = {limit, base};
-        asm volatile("lidt %0" :: "m"(ptr));
-    }
-
-    void RemapPIC(){
+        
         IO::Out(PIC1_DATA_PORT, 0b11111001);
         IO::Out(PIC2_DATA_PORT, 0b11101111);
         asm("sti");
@@ -155,13 +130,15 @@ namespace InterruptManager{
     }
 
     void HandleInterrupt(uint8_t irq){
-        if( handlers[irq].handler != UnhandledInterrupt){
+        if(handlers[irq].handler != UnhandledInterrupt){
             handlers[irq].handler();
         } else {
             Interface::Clear();
-            Interface::Print(irq, 0, Color::White, Color::Red);
+            Interface::Print("Unhandled interrupt occured, code: ", 0, -1, Color::White, Color::Red);
+            Interface::Print(irq, 1, Color::White, Color::Red);
             while(true);
         }
+        
         Interface::FillRow(23, '^');
         if(irq >= 0x20 && irq < 0x30){
             IO::Out(PIC1_COMMAND_PORT, 0x20);

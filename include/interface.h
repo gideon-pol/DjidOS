@@ -3,8 +3,8 @@
 
 #include <common.h>
 
-const size_t INTERFACE_COLUMNS = 80;
-const size_t INTERFACE_ROWS = 25;
+#define INTERFACE_COLUMNS 80
+#define INTERFACE_ROWS 25
 
 enum Color{
     Black = 0,
@@ -64,6 +64,8 @@ private:
 
 extern IChar* VID_MEM;
 
+uint8_t print(uint8_t index, uint64_t number, uint8_t row);
+
 class Interface{
 public:
     static void Clear(){
@@ -71,7 +73,7 @@ public:
             Interface::ClearRow(i);
         }
 
-        applyCursor();
+        //applyCursor();
     }
 
     static void ClearRow(uint8_t row){
@@ -102,19 +104,12 @@ public:
             *(VID_MEM + i + row * INTERFACE_COLUMNS) = d;
         }
 
-        applyCursor();
+        //applyCursor();
     }
 
-    static void Print(uint8_t num, int row = 0, Color t = Color::White, Color b = Color::Black){
-        for(int8_t i = 7; i >= 0; i--){
-            uint8_t remainder = num % 10;
-            num /= 10;
-            IChar d = IChar(remainder + 48, t, b);
-            *(VID_MEM + i + row * INTERFACE_COLUMNS) = d;
-            if(num == 0) break;
-        }
-
-        applyCursor();
+    static void Print(uint64_t num, int row = 0, Color t = Color::White, Color b = Color::Black){
+        print(0, num, row);
+        //applyCursor();
     }
 
     static void PrintByte(uint8_t num, int row = 0, Color t = Color::White, Color b = Color::Black){
