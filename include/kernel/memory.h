@@ -1,7 +1,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include <common.h>
+#include <common/common.h>
 #include <kernel/memory/pmm.h>
 
 #define KERNEL_OFFSET 0xFFFFFF8000000000

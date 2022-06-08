@@ -1,7 +1,7 @@
 #ifndef IO_H
 #define IO_H
 
-#include <common.h>
+#include <common/common.h>
 
 namespace IO{
     uint32_t In32(uint16_t port);

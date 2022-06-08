@@ -22,7 +22,7 @@ void MouseDriver::Initialize(){
 
     IO::In(0x60);
 
-    //Interface::Print((void(*)())&MouseDriver::HandleInterrupt, 10);
+    //UI::Print((void(*)())&MouseDriver::HandleInterrupt, 10);
 
     InterruptManager::SetHandler(0x2C, (void (*)())&MouseDriver::HandleInterrupt);
 } 
@@ -40,22 +40,22 @@ void MouseDriver::HandleInterrupt(){
             packetNumber = (packetNumber + 1) % 3;
  
             if(packetNumber == 0){ 
-                Interface::PrintByte(buffer[0], 3);
-                Interface::PrintByte(buffer[1], 4);
-                Interface::PrintByte(buffer[2], 5);
+                UI::Old::PrintByte(buffer[0], 3);
+                UI::Old::PrintByte(buffer[1], 4);
+                UI::Old::PrintByte(buffer[2], 5);
 
                 if(buffer[0] & 0b00001000){
                     if(buffer[0] & 0b00000001){
-                        Interface::Print("Left mouse button clicked!", 6);
+                        UI::Old::Print("Left mouse button clicked!", 6);
                     }
                     if(buffer[0] & 0b00000010){
-                        Interface::Print("Right mouse button clicked!", 6);
+                        UI::Old::Print("Right mouse button clicked!", 6);
                     }
 
                     float xMovement = (float)(int8_t)buffer[1];
                     float yMovement = (float)(int8_t)buffer[2];
 
-                    Interface::MoveCursor(xMovement * 25, -yMovement * 25);
+                    UI::Old::MoveCursor(xMovement * 25, -yMovement * 25);
                 }
 
                 while(IO::In(0x64) & 0x1) IO::In(0x60);

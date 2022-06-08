@@ -14,10 +14,6 @@ extern uint64_t _KernelStart;
 */
 extern uint64_t _KernelEnd;
 
-int crash(){
-    return *(int*)0xfffffffffffffffff;
-}
-
 struct KernelInfo {
     multiboot_memory_map_t* largest_available_memory_section;
     uint64_t framebuffer;
@@ -30,9 +26,10 @@ void kernel_main(KernelInfo);
 
 extern "C"
 void prekernel(uint64_t multiboot_info_addr){
+    UI::Old::Clear();
+
     KernelInfo info;
     
-    multiboot_info_addr += KERNEL_OFFSET;
     unsigned size = *(unsigned *) multiboot_info_addr;
     struct multiboot_tag* tag = (struct multiboot_tag*) (multiboot_info_addr + 8); 
 
@@ -52,10 +49,6 @@ void prekernel(uint64_t multiboot_info_addr){
                       (uint8_t*)mmap < (uint8_t*)tag + tag->size;
                       mmap = (multiboot_memory_map_t *)((uint64_t)mmap + mmapTag->entry_size))
                 {
-                    Interface::Print(mmap->type, i);
-                    Interface::Print(mmap->addr, i+1);
-                    Interface::Print(mmap->len, i+2);
-
                     i += 3;
                     
                     switch(mmap->type){
@@ -65,7 +58,6 @@ void prekernel(uint64_t multiboot_info_addr){
                     }
                 }
 
-                largestArea->addr += KERNEL_OFFSET;
                 info.largest_available_memory_section = largestArea;
             }
             case MULTIBOOT_TAG_TYPE_FRAMEBUFFER: {
@@ -96,53 +88,38 @@ void prekernel(uint64_t multiboot_info_addr){
         }
     }
 
+
+
     PMM::Initialize(info.largest_available_memory_section);
-    PMM::SetupPaging(PMM::bitmap.Map + PMM::bitmap.Size, 10);    
+    PMM::SetupPaging(PMM::bitmap.Map + PMM::bitmap.Size, 1);
 
     kernel_main(info);
 }
 
 void kernel_main(KernelInfo info){
-/*
-    *(uint32_t*)info.framebuffer = 0xFFFFFF;
-    for(int i = 0; i < info.frame_width; i++){
-        for(int j = 0; j < info.frame_height; j++){
-            *((uint32_t*)(info.framebuffer) + i + j * info.frame_width) = 0xFFFFFF;
-        }
-    }*/
     enableFPU();
 
     InterruptManager::Initialize();
-    keyboardDriver.Initialize();
-    mouseDriver.Initialize();
+    //keyboardDriver.Initialize();
+    //mouseDriver.Initialize();
     InterruptManager::RemapPIC();
+    
+    UI::Graphics::Setup(info.frame_width, info.frame_height, info.framebuffer);
 
-    Interface::Clear();
+    //DrawBox(100, 100, 100, 100, Color::Cyan);
+    DrawString("wat de neuk");
+    //crash();
+    
+/*
+    UI::Old::Clear();
 
+    UI::Old::FillRow(0, '#');
+    UI::Old::FillRow(24, '#');
 
-
-    //int d = *(int*)0x1000;
-
-    Interface::FillRow(0, '#');
-    Interface::FillRow(24, '#');
-
-    Interface::Print("DjidOS - beste OS", 1);
-    Interface::Print("this is a test", 2);
+    UI::Old::Print("DjidOS - beste OS", 1);
+    UI::Old::Print("this is a test", 2);*/
 
     while(true);
-    
-    /*
-    int j = 0;
-    while(true){
-        for(int i = 0; i < 500000000; i++){
-            continue;
-        }
-        Interface::Clear(); 
-        Interface::Print(j, 1);
-        //Interface::MoveCursor(10,10);
-
-        j++;
-    }*/
 }
 
 void handleMultibootTags(uint64_t multiboot_info_addr){

@@ -11,7 +11,9 @@ kernel_object_files := $(patsubst $(SRCDIR)/kernel/%.cpp, $(BUILDDIR)/kernel/%.o
 x86_64_cpp_source_files := $(shell find src -name *.cpp | grep -v $(SRCDIR)/kernel/interrupt_stubs.cpp)
 x86_64_cpp_object_files := $(patsubst $(SRCDIR)/%.cpp, $(BUILDDIR)/x86_64/%.o, $(x86_64_cpp_source_files))
 
-x86_64_object_files := $(x86_64_cpp_object_files) $(x86_64_asm_object_files) $(BUILDDIR)/x86_64/kernel/interrupt_stubs.o
+font_object_files := $(shell find $(BUILDDIR)/x86_64/interface/graphics -name *.font)
+
+x86_64_object_files := $(x86_64_cpp_object_files) $(x86_64_asm_object_files) $(BUILDDIR)/x86_64/kernel/interrupt_stubs.o $(font_object_files)
 
 $(BUILDDIR)/x86_64/kernel/interrupt_stubs.o: $(SRCDIR)/kernel/interrupt_stubs.cpp include/kernel/interrupt_stubs.h
 	mkdir -p $(dir $@) && \

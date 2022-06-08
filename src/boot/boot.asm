@@ -18,7 +18,9 @@ start:
 setup_paging:
     mov eax, V2P(p3_table)
     or eax, 0b11
-    mov dword [V2P(p4_table)], eax
+    %if 1
+    mov dword [V2P(p4_table)], eax 
+    %endif
     mov dword [V2P(p4_table) + 4088], eax
 
     mov eax, V2P(p2_table)
@@ -80,7 +82,8 @@ upper_half_jump_64:
     mov es, rax
 
     mov rax, p4_table
-    mov qword [rax], 0
+    %if 0 mov qword [rax], 0 
+    %endif
 
     mov rdi, rbx
 

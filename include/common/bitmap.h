@@ -1,7 +1,7 @@
 #ifndef BITMAP_H
 #define BITMAP_H
 
-#include <common.h>
+#include <common/common.h>
 
 class Bitmap{
 public:

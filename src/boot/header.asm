@@ -5,14 +5,14 @@ header_start:
     dd 0
     dd header_end - header_start
     dd 0x100000000 - (0xe85250d6 + 0 + (header_end - header_start))
-%if 0
+%if 1
 framebuffer_tag_start:
 align 8
     dw 5
     dw 0
     dd framebuffer_tag_end - framebuffer_tag_start
-    dd 400
-    dd 300
+    dd 1920
+    dd 1080
     dd 32
 framebuffer_tag_end:
 %endif

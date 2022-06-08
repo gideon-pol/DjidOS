@@ -4,12 +4,13 @@
 //#include <stdio>
 //#include <cstring>
 
-#include <common.h>
+#include <common/common.h>
 #include <interface.h>
 #include <kernel/io.h>
 #include <drivers/keyboard.h>
 #include <drivers/mouse.h>
 #include <kernel/interrupt_stubs.h>
+#include <kernel/memory.h>
 
 #define IDT_InterruptGate 0b10001110
 
@@ -23,6 +24,8 @@
 #define ICW1_INIT 0x10
 #define ICW1_ICW4 0x01
 #define ICW4_8086 0x01
+
+using namespace UI::Old;
 
 class InterruptTableEntry{
 public:

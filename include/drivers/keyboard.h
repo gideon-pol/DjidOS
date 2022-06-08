@@ -2,7 +2,7 @@
 #define KEYBOARD_H
 
 #include <drivers/driver.h>
-#include <common.h>
+#include <common/common.h>
 
 class KeyboardDriver// : public Driver
 {

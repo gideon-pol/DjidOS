@@ -15,7 +15,7 @@ void KeyboardDriver::HandleInterrupt(){
     KeyCode code = KeyCode::FromScanCode(scanCode);
 
     char d = code.ToChar();
-    Interface::Print(&d, 7, 1);
+    UI::Old::Print(&d, 7, 1);
 
     while(IO::In(0x64) & 0x1) IO::In(0x60);
 }

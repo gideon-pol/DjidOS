@@ -1,4 +1,8 @@
-#include <common.h>
+#include <common/common.h>
+
+void crash(){
+    asm("int $0");
+}
 
 uint32_t strlen(char* str){
     uint32_t c = 0;
