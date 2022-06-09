@@ -1,9 +1,8 @@
 #include <kernel/interrupt.h>
 
-
 void DivByZeroHandler(){
     if(GRAPHICS_MODE){
-        DrawBox(0, 0, 100, 100, Color::Red);
+        DrawBox(0, 0, 100, 100, Color(255,0,0));
     } else{
         UI::Old::Clear();
         UI::Old::Print("You divided by zero, nerd - rebooting", 0, -1, VgaColor::White, VgaColor::Red);

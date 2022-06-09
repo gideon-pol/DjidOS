@@ -105,10 +105,20 @@ void kernel_main(KernelInfo info){
     InterruptManager::RemapPIC();
     
     UI::Graphics::Setup(info.frame_width, info.frame_height, info.framebuffer);
+    Terminal::Setup();
 
-    //DrawBox(100, 100, 100, 100, Color::Cyan);
-    DrawString("wat de neuk");
-    //crash();
+    DrawBox(0, 0, CurrentFrame.Width, CurrentFrame.Height, Color::White);
+    //DrawString("This is a test", 0, 0, Color::White, Color::Blue);
+    //if(Color(255,255,255) != Color::White) crash();
+    for(int i = 0; i < CurrentFrame.Width; i++){
+        //*((uint32_t*)FRAMEBUFFER + i + 50 * CurrentFrame.Width) = 0xFFFFFFF;//Color::White.ToInt();
+    }
+
+    Terminal::PrintLine("%c0DjidOS - best OS");
+    Terminal::PrintLine("%cwThis is a test %x %s", KERNEL_OFFSET, "wow mooi man");
+    Terminal::PrintLine("%cgThis is a test %x %s", KERNEL_OFFSET, "wow man");
+    Terminal::PrintLine("%cbThis is a test %x %s", KERNEL_OFFSET, "wow mooi");
+    //Terminal::PrintLine("R: %d G: %d B: %d", Color::White.R, Color::White.G, Color::White.B);
     
 /*
     UI::Old::Clear();
@@ -120,10 +130,6 @@ void kernel_main(KernelInfo info){
     UI::Old::Print("this is a test", 2);*/
 
     while(true);
-}
-
-void handleMultibootTags(uint64_t multiboot_info_addr){
-    
 }
 
 void enableFPU(){

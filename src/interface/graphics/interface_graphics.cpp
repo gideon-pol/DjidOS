@@ -9,11 +9,30 @@ extern char _binary_font_psf_end;
 namespace UI{
     namespace Graphics{
         Frame CurrentFrame;
-        PSF_Font* font;
+        PSF_Font* Font;
 
-        Frame::Frame(uint16_t width, uint16_t height, uint64_t fb) : frameWidth(width), frameHeight(height), framebuffer(fb) {}
-        uint16_t Frame::GetWidth(){ return frameWidth; }
-        uint16_t Frame::GetHeight(){ return frameHeight; }
+        Frame::Frame(uint16_t width, uint16_t height, uint64_t fb) : Width(width), Height(height), framebuffer(fb) {}
+        //uint16_t Frame::GetWidth(){ return frameWidth; }
+        //uint16_t Frame::GetHeight(){ return frameHeight; }
+
+        uint32_t Color::ToInt(){
+            return (R << 16) | (G << 8) | B;
+        }
+
+         /*
+        namespace Colors{
+            Color Red = Color(255, 0, 0);
+            Color Green = Color(0, 255, 0);
+            Color Blue = Color(0, 0, 255);
+            Color Cyan = Color(0, 255, 255);
+            Color Magenta = Color(255, 0, 255);
+            Color Yellow = Color(255, 255, 0);
+            Color Orange = Color(255, 180, 0);
+            Color Black = Color(0, 0, 0);
+            Color White = Color(255, 255, 255);
+            Color Transparent = Color(0, 0, 0, 0);
+            uint32_t test = 0xFFFFFFFF;
+        }*/
 
         void Setup(uint16_t width, uint16_t height, uint64_t framebuffer){
             uint64_t mappedFramebuffer = ALIGN(FRAMEBUFFER, PAGE_SIZE);
@@ -29,65 +48,62 @@ namespace UI{
             }
 
             CurrentFrame = Frame(width, height, mappedFramebuffer);
-            font = (PSF_Font*)&_binary_font_psf_start;
-            if(font->magic != 0x864AB572) crash();
+            Font = (PSF_Font*)&_binary_font_psf_start;
+            if(Font->magic != 0x864AB572) crash();
         }
 
         void DrawBox(int x, int y, uint16_t sizeX, uint16_t sizeY, Color innerColor, int outlineSize, Color outlineColor){
-            int startX = min(max(x, 0), (int)CurrentFrame.GetWidth());
-            int startY = min(max(y, 0), (int)CurrentFrame.GetHeight());
+            int startX = min(max(x, 0), (int)CurrentFrame.Width);
+            int startY = min(max(y, 0), (int)CurrentFrame.Height);
+ 
+            uint16_t endX = min(x + sizeX, (int)CurrentFrame.Width);
+            uint16_t endY = min(y + sizeY, (int)CurrentFrame.Height);
 
-            uint16_t endX = min(x + sizeX, (int)CurrentFrame.GetWidth());
-            uint16_t endY = min(y + sizeY, (int)CurrentFrame.GetHeight());
-
-            uint32_t innerColorInt = (innerColor.R << 16) | (innerColor.G << 8) | innerColor.B;
+            uint32_t innerColorInt = innerColor.ToInt();
 
             for(int i = startY; i < endY; i++){
-                int row = i * CurrentFrame.GetWidth();
+                int row = i * CurrentFrame.Width;
                 for(int j = startX; j < endX; j++){
                     *((uint32_t*)FRAMEBUFFER + row + j) = innerColorInt;
                 }
             }
         }
 
-        void DrawString(char* s){
-            font = (PSF_Font*)&_binary_font_psf_start;
-            uint8_t* fontTable = (uint8_t*)font + font->headersize;
+        void DrawString(char* s, uint16_t column, uint16_t row, Color textColor, Color bgColor){
+            DrawString(s, -1, row, column, textColor, bgColor);
+        }
 
-            UI::Old::PrintHex(font->magic, 0);
-            UI::Old::Print(font->version, 1);
-            UI::Old::Print(font->headersize, 2);
-            UI::Old::Print(font->flags, 3);
-            UI::Old::Print(font->glyphCount, 4);
-            UI::Old::Print(font->charSize, 5);
-            UI::Old::Print(font->width, 6);
-            UI::Old::Print(font->height, 7);
-            UI::Old::PrintHex((uint64_t)&_binary_font_psf_start, 8);
+        void DrawString(char* s, int len, uint16_t column, uint16_t row, Color textColor, Color bgColor){
+            Font = (PSF_Font*)&_binary_font_psf_start;
+            uint8_t* fontTable = (uint8_t*)Font + Font->headersize;
 
-            uint16_t bytesPerLine = (font->width + 7) / 8;
+            uint16_t bytesPerLine = (Font->width + 7) / 8;
+            uint16_t xOffset = column * Font->width;
+            uint16_t yOffset = row * Font->height;
 
-            uint16_t stringLength = strlen(s);
+            int strLen = (len == -1) ? strlen(s) : len;
 
-            uint16_t xOffset = 0;
+            uint32_t textColorInt = textColor.ToInt();
+            uint32_t bgColorInt = bgColor.ToInt();
 
-            for(int i = 0; i < stringLength; i++){
-                uint8_t* glyph = (uint8_t*)(fontTable + s[i] * font->charSize);
+            for(int i = 0; i < strLen; i++){
+                uint8_t* glyph = (uint8_t*)(fontTable + s[i] * Font->charSize);
 
-                for(int y = 0; y < font->height; y++){
-                    int row = y * CurrentFrame.GetWidth();
-                    uint16_t mask = 0b1 << (font->width - 1);
+                for(int y = 0; y < Font->height; y++){
+                    int row = (y + yOffset) * CurrentFrame.Width;
 
-                    for(int x = 0; x < font->width; x++){
-                        if(*(uint32_t*)glyph & mask){
-                            *((uint32_t*)FRAMEBUFFER + row + x + xOffset) = 0xFFFFFF;
+                    for(int x = 0; x < Font->width; x++){
+                        if(glyph[x/8] & (0b10000000 >> (x & 0b111))){
+                            *((uint32_t*)FRAMEBUFFER + row + x + xOffset) = textColorInt;
+                        } else if(bgColor != Color::Transparent){
+                            *((uint32_t*)FRAMEBUFFER + row + x + xOffset) = bgColorInt;
                         }
-                        mask >>= 1;
                     }
 
                     glyph += bytesPerLine;
                 }
 
-                xOffset += font->width + 1;
+                xOffset += Font->width + 1;
             }
         }
     }

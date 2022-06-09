@@ -8,22 +8,26 @@ x86_64_asm_object_files := $(patsubst $(SRCDIR)/%.asm, $(BUILDDIR)/x86_64/%.o, $
 kernel_source_files := $(shell find $(SRCDIR)/kernel -name *.cpp | grep -v $(SRCDIR)/kernel/interrupt_stubs.cpp)
 kernel_object_files := $(patsubst $(SRCDIR)/kernel/%.cpp, $(BUILDDIR)/kernel/%.o, $(kernel_source_files))
 
-x86_64_cpp_source_files := $(shell find src -name *.cpp | grep -v $(SRCDIR)/kernel/interrupt_stubs.cpp)
+x86_64_cpp_source_files := $(shell find $(SRCDIR) -name *.cpp | grep -v $(SRCDIR)/kernel/interrupt_stubs.cpp)
 x86_64_cpp_object_files := $(patsubst $(SRCDIR)/%.cpp, $(BUILDDIR)/x86_64/%.o, $(x86_64_cpp_source_files))
 
-font_object_files := $(shell find $(BUILDDIR)/x86_64/interface/graphics -name *.font)
+header_files :=  $(shell find include -name *.h)
 
-x86_64_object_files := $(x86_64_cpp_object_files) $(x86_64_asm_object_files) $(BUILDDIR)/x86_64/kernel/interrupt_stubs.o $(font_object_files)
+
+# this doesn't work, fix later
+# font_object_files := $(shell find $(BUILDDIR)/x86_64/interface/graphics -name *.font)
+
+x86_64_object_files := $(x86_64_cpp_object_files) $(x86_64_asm_object_files) $(BUILDDIR)/x86_64/kernel/interrupt_stubs.o $(BUILDDIR)/x86_64/interface/graphics/main.font
 
 $(BUILDDIR)/x86_64/kernel/interrupt_stubs.o: $(SRCDIR)/kernel/interrupt_stubs.cpp include/kernel/interrupt_stubs.h
 	mkdir -p $(dir $@) && \
 	g++ $(CFLAGS) -fpermissive -mno-red-zone -mgeneral-regs-only -I include $(SRCDIR)/kernel/interrupt_stubs.cpp -o $@
 
-$(kernel_object_files): $(BUILDDIR)/kernel/%.o : $(SRCDIR)/kernel/%.cpp include/*.h
-	mkdir -p $(dir $@) && \
-	g++ $(CFLAGS) -I include $(patsubst $(BUILDDIR)/kernel/%.o, $(SRCDIR)/kernel/%.cpp, $@) -o $@
+#$(kernel_object_files): $(BUILDDIR)/kernel/%.o : $(SRCDIR)/kernel/%.cpp include/*.h
+#	mkdir -p $(dir $@) && \
+#	g++ $(CFLAGS) -I include $(patsubst $(BUILDDIR)/kernel/%.o, $(SRCDIR)/kernel/%.cpp, $@) -o $@
 
-$(x86_64_cpp_object_files): $(BUILDDIR)/x86_64/%.o : $(SRCDIR)/%.cpp include/*.h
+$(x86_64_cpp_object_files): $(BUILDDIR)/x86_64/%.o : $(SRCDIR)/%.cpp $(header_files)
 	mkdir -p $(dir $@) && \
 	g++ $(CFLAGS) -I include $(patsubst $(BUILDDIR)/x86_64/%.o, $(SRCDIR)/%.cpp, $@) -o $@
 

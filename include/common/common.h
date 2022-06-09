@@ -1,4 +1,5 @@
-#pragma once
+#ifndef COMMON_H
+#define COMMON_H
 
 #include <cstddef>
 #include <cstdint>
@@ -18,3 +19,5 @@ template<class T> T min(T a, T b){
 
 inline void* operator new(size_t s) throw() { return nullptr; }
 inline void operator delete(void* p, unsigned long s) throw() {}
+
+#endif
