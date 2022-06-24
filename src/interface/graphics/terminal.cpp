@@ -2,11 +2,15 @@
 
 using namespace UI::Graphics;
 
+// Terminal currently uses a very naive method of rendering
+// TODO: switch to a redrawing based approach instead of shifting up the framebuffer
 namespace Terminal {
     namespace {
         uint16_t totalColumns, totalRows;
         Color textColor = Color::White;
         Color bgColor = Color::Transparent;
+        char inputStr[500];
+        int inputIndex = 0;
 
         uint16_t printNumber(uint16_t index, uint64_t number, uint16_t row){
             char c = number % 10 + 48;
@@ -26,9 +30,19 @@ namespace Terminal {
         }
 
         void createNewLine(){
-            for(int x = 0; x < CurrentFrame.Width; x++){
-                for(int y = 0; y < CurrentFrame.Height; y++){
-                    *((uint32_t*)FRAMEBUFFER + x + y * CurrentFrame.Width) = *((uint32_t*)FRAMEBUFFER + x + (y + Font->height) * CurrentFrame.Width);
+            int h = CurrentFrame.Height - Font->height * 2;
+            for(int y = 0; y < h; y++){
+                int row = y * CurrentFrame.Width;
+                for(int x = 0; x < CurrentFrame.Width; x++){
+                    *((uint32_t*)FRAMEBUFFER + x + row) = *((uint32_t*)FRAMEBUFFER + x + (y + Font->height) * CurrentFrame.Width);
+                }
+            }
+            
+            uint32_t bgColorInt = bgColor.ToInt();
+            for(int y = h; y < CurrentFrame.Height - Font->height; y++){
+                int row = y * CurrentFrame.Width;
+                for(int x = 0; x < CurrentFrame.Width; x++){
+                    *((uint32_t*)FRAMEBUFFER + x + row) = bgColorInt;
                 }
             }
         }
@@ -39,7 +53,21 @@ namespace Terminal {
         totalRows = CurrentFrame.Height / Font->height - 1;
     }
 
-    void PrintLine(char* s...){
+    void AddInputCharacter(char c){
+        inputStr[inputIndex] = c;
+        inputIndex++;
+        int rows = CurrentFrame.GetRows();
+        DrawString((char*)&inputStr, inputIndex, 0, rows-1, Color::White, Color::Black);
+    }
+
+    void RemoveInputCharacter(){
+        inputIndex = max(0, --inputIndex);
+        int row = CurrentFrame.GetRows() - 1;
+        DrawBox(0, row * Font->height, CurrentFrame.Width, CurrentFrame.Height - row * Font->height, Color::Black);
+        DrawString((char*)&inputStr, inputIndex, 0, row, Color::White, Color::Black);
+    }
+
+    void Println(char* s...){
         va_list args;
         va_start(args, s);
 
@@ -105,6 +133,15 @@ namespace Terminal {
             str++;
             column++;
 
+        }     
+    }
+
+    void Clear(){
+        uint32_t bgColorInt = bgColor.ToInt();
+        for(int x = 0; x < CurrentFrame.Width; x++){
+            for(int y = 0; y < CurrentFrame.Height - Font->height; y++){
+                *((uint32_t*)FRAMEBUFFER + x + y * CurrentFrame.Width) = bgColorInt;
+            }
         }
     }
 }

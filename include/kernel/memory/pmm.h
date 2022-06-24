@@ -7,18 +7,16 @@
 #include <kernel/multiboot2.h>
 
 #define PAGE_SIZE 0x200000
-#define IDENTITY_MAP_KERNEL true
+#define PAGE_TABLE_SIZE 4096
 
 namespace PMM{
     extern Bitmap bitmap;
+    extern void* freeRegion;
 
     void Initialize(multiboot_memory_map_t* area);
-    void SetupPaging(void* addr, size_t s);
 
-    void MapRegion(uint64_t phaddr, uint64_t vaddr);
-
-    void LockPages(void* addr, uint64_t count = 1);
-    void FreePages(void* addr, uint64_t count = 1);
+    void LockPages(uintptr_t addr, uint64_t count = 1);
+    void FreePages(uintptr_t addr, uint64_t count = 1);
 
     void* AllocatePage();
 }

@@ -41,6 +41,64 @@ namespace UI{
                 }  
             }
 
+            static Color FromHSV(int hue, float saturation, float value){
+                Color out;
+
+                if(saturation <= 0.0) {
+                    return Color(value, value, value);
+                }
+
+                double hh = hue % 360;
+                hh /= 60.0;
+                long i = (long)hh;
+                double ff = hh - i;
+                double p = value * (1.0 - saturation);
+                double q = value * (1.0 - (saturation * ff));
+                double t = value * (1.0 - (saturation * (1.0 - ff)));
+
+                p *= 255;
+                t *= 255;
+                q *= 255;
+                value *= 255;
+
+                switch(i) {
+                case 0:
+                    out.R = value;
+                    out.G = t;
+                    out.B = p;
+                    break;
+                case 1:
+                    out.R = q;
+                    out.G = value;
+                    out.B = p;
+                    break;
+                case 2:
+                    out.R = p;
+                    out.G = value;
+                    out.B = t;
+                    break;
+
+                case 3:
+                    out.R = p;
+                    out.G = q;
+                    out.B = value;
+                    break;
+                case 4:
+                    out.R = t;
+                    out.G = p;
+                    out.B = value;
+                    break;
+                case 5:
+                default:
+                    out.R = value;
+                    out.G = p;
+                    out.B = q;
+                    break;
+                }
+
+                return out;     
+            }
+
             uint8_t R = 255;
             uint8_t G = 0;
             uint8_t B = 0;
@@ -50,11 +108,13 @@ namespace UI{
         class Frame{
             public:
                 Frame() = default;
-                Frame(uint16_t width, uint16_t height, uint64_t fb);
+                Frame(uint16_t width, uint16_t height, uintptr_t fb);
                 uint16_t Width, Height;
+                uint16_t GetColumns();
+                uint16_t GetRows();
 
             private:
-                uint64_t framebuffer;
+                uintptr_t framebuffer;
         };
 
         typedef struct {
@@ -71,12 +131,14 @@ namespace UI{
         extern Frame CurrentFrame;
         extern PSF_Font* Font;
         #define PIXEL_SIZE 4
-        const uint64_t FRAMEBUFFER = 0xFFFFFF8001000000;
+        const uintptr_t FRAMEBUFFER = 0xFFFFFFD000000000;
 
-        void Setup(uint16_t width, uint16_t height, uint64_t framebuffer);
+        void Setup(uint16_t width, uint16_t height, uintptr_t framebuffer);
         void DrawBox(int x, int y, uint16_t sizeX, uint16_t sizeY, Color innerColor = Color::White, int outlineSize = 0, Color outlineColor = Color::White);    
         void DrawString(char* s, uint16_t column, uint16_t row, Color textColor = Color::White, Color bgColor = Color::Transparent);
         void DrawString(char* s, int len, uint16_t column, uint16_t row, Color textColor = Color::White, Color bgColor = Color::Transparent);
+        void DrawBSOD(char* s);
+        bool IsInitialized();
     }
 }
 

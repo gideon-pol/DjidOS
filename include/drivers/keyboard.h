@@ -4,6 +4,8 @@
 #include <drivers/driver.h>
 #include <common/common.h>
 
+#define SCANCODE_KEY_RELEASED 0b10000000
+
 class KeyboardDriver// : public Driver
 {
 public:
@@ -17,7 +19,7 @@ extern KeyboardDriver keyboardDriver;
 class KeyCode{
 public:
     enum Key : uint16_t {
-        Zero, One, Two, Three, Four, Five, Six, Seven, Eight, Nine, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, Excl, At, Hashtag, Dollar, Percent, Ampesand, Asterix, LParenthesis, RParenthesis, Minus, Equals, LBracket, RBracket, LBraces, RBraces, Backslash, SemiColon, Colon, Apostrophe, Quote, Comma, LAngBracket, Dot, RAngBracket, Slash, Question, Backspace, Tab, CapsLock, Enter, LShift, RShift, CTRL, Alt, Space, AltGr, Esc, Error 
+        Zero, One, Two, Three, Four, Five, Six, Seven, Eight, Nine, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z, Excl, At, Hashtag, Dollar, Percent, Ampesand, Asterix, LParenthesis, RParenthesis, Minus, Equals, LBracket, RBracket, LBraces, RBraces, Backslash, SemiColon, Colon, Apostrophe, Quote, Comma, LAngBracket, Dot, RAngBracket, Slash, Question, Space, Backspace, Tab, CapsLock, Enter, LShift, RShift, CTRL, Alt, AltGr, Esc, Error 
     };
 
     KeyCode() = default;
@@ -25,7 +27,8 @@ public:
     constexpr KeyCode(Key code, bool cap) : value(code), capitalized(cap){}
 
     constexpr char ToChar() const {
-        return defaultTranslation[(uint16_t)value];
+        if(value < sizeof(defaultTranslation)) return defaultTranslation[(uint16_t)value];
+        else return '\0';
     }
 
     constexpr operator int() const { return (int)value; }
@@ -95,7 +98,7 @@ public:
 private:
     Key value;
     bool capitalized;
-    const char* defaultTranslation = "0123456789abcdefghijklmnopqrstuvwxyz!@#$%&*()-=[]{}\\;:'\",<.>/?";
+    inline static char defaultTranslation[] = "0123456789abcdefghijklmnopqrstuvwxyz!@#$%&*()-=[]{}\\;:'\",<.>/? ";
 };
 
 void KeyboardHandler(uint8_t scanCode);

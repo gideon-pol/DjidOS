@@ -15,7 +15,15 @@ void KeyboardDriver::HandleInterrupt(){
     KeyCode code = KeyCode::FromScanCode(scanCode);
 
     char d = code.ToChar();
-    UI::Old::Print(&d, 7, 1);
+
+    if(!(scanCode & SCANCODE_KEY_RELEASED)){
+        if(GRAPHICS_MODE){
+            if(code == KeyCode::Backspace) Terminal::RemoveInputCharacter();
+            else if(d != '\0') Terminal::AddInputCharacter(d);
+        } else {
+            if(d != '\0') UI::Old::Print(&d, 7, 1);
+        }
+    }
 
     while(IO::In(0x64) & 0x1) IO::In(0x60);
 }

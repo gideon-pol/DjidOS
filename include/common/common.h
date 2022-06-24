@@ -8,6 +8,11 @@ uint32_t strlen(char* str);
 extern "C" void __cxa_pure_virtual();
 
 void crash();
+/*
+double fmod(double x, double y);
+double floor(double d);
+double trunc(double d);
+double abs(double d);*/
 
 template<class T> T max(T a, T b){
     return (a < b) ? b : a;

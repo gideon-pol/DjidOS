@@ -6,8 +6,11 @@
 
 namespace Terminal{
     void Setup();
-    void PrintLine(char* s...);
+    void Println(char* s...);
+    void Clear();
 
+    void AddInputCharacter(char c);
+    void RemoveInputCharacter();
 }
 
 #endif

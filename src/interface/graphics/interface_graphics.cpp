@@ -3,53 +3,43 @@
 
 #include <kernel/memory.h>
 
-extern char _binary_font_psf_start;
-extern char _binary_font_psf_end;
+extern char _binary_src_main_psf_start;
+extern char _binary_src_main_psf_end;
 
 namespace UI{
     namespace Graphics{
+        namespace {
+            bool initialized = false;
+        }
+
         Frame CurrentFrame;
         PSF_Font* Font;
 
-        Frame::Frame(uint16_t width, uint16_t height, uint64_t fb) : Width(width), Height(height), framebuffer(fb) {}
-        //uint16_t Frame::GetWidth(){ return frameWidth; }
-        //uint16_t Frame::GetHeight(){ return frameHeight; }
+        Frame::Frame(uint16_t width, uint16_t height, uintptr_t fb) : Width(width), Height(height), framebuffer(fb) {}
+        uint16_t Frame::GetColumns(){ return Width/Font->width; }
+        uint16_t Frame::GetRows(){ return Height/Font->height; }
 
         uint32_t Color::ToInt(){
             return (R << 16) | (G << 8) | B;
         }
 
-         /*
-        namespace Colors{
-            Color Red = Color(255, 0, 0);
-            Color Green = Color(0, 255, 0);
-            Color Blue = Color(0, 0, 255);
-            Color Cyan = Color(0, 255, 255);
-            Color Magenta = Color(255, 0, 255);
-            Color Yellow = Color(255, 255, 0);
-            Color Orange = Color(255, 180, 0);
-            Color Black = Color(0, 0, 0);
-            Color White = Color(255, 255, 255);
-            Color Transparent = Color(0, 0, 0, 0);
-            uint32_t test = 0xFFFFFFFF;
-        }*/
-
-        void Setup(uint16_t width, uint16_t height, uint64_t framebuffer){
-            uint64_t mappedFramebuffer = ALIGN(FRAMEBUFFER, PAGE_SIZE);
+        void Setup(uint16_t width, uint16_t height, uintptr_t framebuffer){
+            uintptr_t mappedFramebuffer = ALIGN(FRAMEBUFFER, PAGE_SIZE);
 
             int frameBufferBytesToMap = width * height * 4;
             int frameBufferPagesMapped = 0;
 
             while(frameBufferBytesToMap > 0){
-                PMM::MapRegion(framebuffer + frameBufferPagesMapped * PAGE_SIZE, mappedFramebuffer + frameBufferPagesMapped * PAGE_SIZE);
-                PMM::LockPages((void*)(mappedFramebuffer + frameBufferPagesMapped * PAGE_SIZE));
+                VMM::MapPage((void*)(framebuffer + frameBufferPagesMapped * PAGE_SIZE), (void*)(mappedFramebuffer + frameBufferPagesMapped * PAGE_SIZE));
+                PMM::LockPages(framebuffer + frameBufferPagesMapped * PAGE_SIZE);
                 frameBufferBytesToMap -= PAGE_SIZE;
                 frameBufferPagesMapped++;
             }
 
             CurrentFrame = Frame(width, height, mappedFramebuffer);
-            Font = (PSF_Font*)&_binary_font_psf_start;
+            Font = (PSF_Font*)&_binary_src_main_psf_start;
             if(Font->magic != 0x864AB572) crash();
+            initialized = true;
         }
 
         void DrawBox(int x, int y, uint16_t sizeX, uint16_t sizeY, Color innerColor, int outlineSize, Color outlineColor){
@@ -74,7 +64,7 @@ namespace UI{
         }
 
         void DrawString(char* s, int len, uint16_t column, uint16_t row, Color textColor, Color bgColor){
-            Font = (PSF_Font*)&_binary_font_psf_start;
+            Font = (PSF_Font*)&_binary_src_main_psf_start;
             uint8_t* fontTable = (uint8_t*)Font + Font->headersize;
 
             uint16_t bytesPerLine = (Font->width + 7) / 8;
@@ -105,6 +95,22 @@ namespace UI{
 
                 xOffset += Font->width + 1;
             }
+        }
+
+        void DrawBSOD(char* s){
+            DrawBox(0, 0, CurrentFrame.Width, CurrentFrame.Height, Color(0, 120, 215));
+            int yOffset = (CurrentFrame.GetRows() - 6) / 2;
+
+            DrawString(":(", -1, 20, yOffset);
+            DrawString("Your PC ran into a problem and needs to restart. We're", -1, 20, yOffset+1);
+            DrawString("just collecting some erro info, and then we'll restart for", -1, 20, yOffset+2);
+            DrawString("you", -1, 20, yOffset+3);
+
+            DrawString(s, -1, 20, yOffset+5);
+        }
+
+        bool IsInitialized(){
+            return initialized;
         }
     }
 };

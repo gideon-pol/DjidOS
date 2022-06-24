@@ -6,13 +6,13 @@
 #include <kernel/multiboot2.h>
 #include <kernel/memory.h>
 
-extern uint64_t _KernelStart;
+extern uintptr_t _KernelStart;
 /* IMPORTANT:
     the multiboot information structure technically still comes
     after the kernel elf sections. It can be safely discarded and
     overwritten after booting however.
 */
-extern uint64_t _KernelEnd;
+extern uintptr_t _KernelEnd;
 
 struct KernelInfo {
     multiboot_memory_map_t* largest_available_memory_section;
@@ -25,9 +25,7 @@ void enableFPU();
 void kernel_main(KernelInfo);
 
 extern "C"
-void prekernel(uint64_t multiboot_info_addr){
-    UI::Old::Clear();
-
+void prekernel(uintptr_t multiboot_info_addr){
     KernelInfo info;
     
     unsigned size = *(unsigned *) multiboot_info_addr;
@@ -47,7 +45,7 @@ void prekernel(uint64_t multiboot_info_addr){
                 int i = 0;
                 for (mmap = mmapTag->entries;
                       (uint8_t*)mmap < (uint8_t*)tag + tag->size;
-                      mmap = (multiboot_memory_map_t *)((uint64_t)mmap + mmapTag->entry_size))
+                      mmap = (multiboot_memory_map_t *)((uintptr_t)mmap + mmapTag->entry_size))
                 {
                     i += 3;
                     
@@ -66,6 +64,7 @@ void prekernel(uint64_t multiboot_info_addr){
                 info.frame_width = tagfb->common.framebuffer_width;
                 info.frame_height = tagfb->common.framebuffer_height;
                 
+                /*
                 switch(tagfb->common.framebuffer_type){
                     case MULTIBOOT_FRAMEBUFFER_TYPE_INDEXED: {
                         //*(uint32_t*)(0x1000) = 0;
@@ -83,57 +82,116 @@ void prekernel(uint64_t multiboot_info_addr){
                         //*(uint32_t*)(0x1000) = 3;
                         break;
                     }
-                }
+                }*/
             }
         }
     }
 
-
-
     PMM::Initialize(info.largest_available_memory_section);
-    PMM::SetupPaging(PMM::bitmap.Map + PMM::bitmap.Size, 1);
+    VMM::SetupPaging((void*)((uintptr_t)PMM::bitmap.Map + PMM::bitmap.Size), 1);
 
     kernel_main(info);
 }
 
 void kernel_main(KernelInfo info){
-    enableFPU();
-
     InterruptManager::Initialize();
-    //keyboardDriver.Initialize();
-    //mouseDriver.Initialize();
-    InterruptManager::RemapPIC();
     
-    UI::Graphics::Setup(info.frame_width, info.frame_height, info.framebuffer);
+    UI::Graphics::Setup(info.frame_width, info.frame_height, info.framebuffer);    
     Terminal::Setup();
 
-    DrawBox(0, 0, CurrentFrame.Width, CurrentFrame.Height, Color::White);
-    //DrawString("This is a test", 0, 0, Color::White, Color::Blue);
-    //if(Color(255,255,255) != Color::White) crash();
-    for(int i = 0; i < CurrentFrame.Width; i++){
-        //*((uint32_t*)FRAMEBUFFER + i + 50 * CurrentFrame.Width) = 0xFFFFFFF;//Color::White.ToInt();
+    Terminal::Println("Framebuffer setup completed");
+    Terminal::Println("Initialized terminal");
+
+    keyboardDriver.Initialize();
+    Terminal::Println("%cgSuccessfully started keyboard driver%cw");
+
+    mouseDriver.Initialize();
+    Terminal::Println("%cgSuccessfully started mouse driver%cw");
+
+    InterruptManager::RemapPIC();
+    Terminal::Println("Remapped PIC chip");
+
+    Terminal::Println("Enabling FPU");
+    enableFPU();
+
+    // Landing screen
+    {
+        DrawBox(0, 0, CurrentFrame.Width, CurrentFrame.Height - Font->height, Color::White);
+        int width = 55;
+        int height = 9;
+        int xOffset = (CurrentFrame.GetColumns() - width) / 2;
+        int yOffset = (CurrentFrame.GetRows() - height * 1.5) / 2;
+        
+        UI::Graphics::DrawString(" _____                __          _____   _____", -1, xOffset, yOffset+0, Color::Black);
+        UI::Graphics::DrawString("/\\  __`\\   __  __    /\\ \\        /\\  __`\\/\\  __`\\", -1, xOffset, yOffset+1, Color::Black);
+        UI::Graphics::DrawString("\\ \\ \\/\\ \\ /\\_\\/\\_\\   \\_\\ \\    ___\\ \\ \\/\\ \\ \\ \\L\\_\\", -1, xOffset, yOffset+2, Color::Black);
+        UI::Graphics::DrawString(" \\ \\ \\ \\ \\\\/\\ \\/\\ \\  /'_` \\  / __`\\ \\ \\ \\ \\ \\____ \\", -1, xOffset, yOffset+3, Color::Black);
+        UI::Graphics::DrawString("  \\ \\ \\_\\ \\\\ \\ \\ \\ \\/\\ \\L\\ \\/\\ \\L\\ \\ \\ \\_\\ \\/\\ \\L\\ \\", -1, xOffset, yOffset+4, Color::Black);
+        UI::Graphics::DrawString("   \\ \\____/_\\ \\ \\ \\_\\ \\___,_\\ \\____/\\ \\_____\\ \\_____\\", -1, xOffset, yOffset+5, Color::Black);
+        UI::Graphics::DrawString("    \\/___//\\ \\_\\ \\/_/\\/__,_ /\\/___/  \\/_____/\\/_____/", -1, xOffset, yOffset+6, Color::Black);
+        UI::Graphics::DrawString("          \\ \\____/", -1, xOffset, yOffset+7, Color::Black);
+        UI::Graphics::DrawString("           \\/___/", -1, xOffset, yOffset+8, Color::Black);
+        int rows = CurrentFrame.GetRows();
+        UI::Graphics::DrawString("DjidOS - A mediocre OS", -1, 0, rows - 2, Color::Black);
+
+        
+        //THIS DRAWS A FUNNY RAINBOW LANDING SCREEN
+        /*
+        int h = 0;
+        while(true){
+            UI::Graphics::DrawString(" _____                __          _____   _____", -1, xOffset, yOffset+0, Color::FromHSV(h, 1, 1));
+            UI::Graphics::DrawString("/\\  __`\\   __  __    /\\ \\        /\\  __`\\/\\  __`\\", -1, xOffset, yOffset+1, Color::FromHSV(h+45, 1, 1));
+            UI::Graphics::DrawString("\\ \\ \\/\\ \\ /\\_\\/\\_\\   \\_\\ \\    ___\\ \\ \\/\\ \\ \\ \\L\\_\\", -1, xOffset, yOffset+2, Color::FromHSV(h+90, 1, 1));
+            UI::Graphics::DrawString(" \\ \\ \\ \\ \\\\/\\ \\/\\ \\  /'_` \\  / __`\\ \\ \\ \\ \\ \\____ \\", -1, xOffset, yOffset+3, Color::FromHSV(h+135, 1, 1));
+            UI::Graphics::DrawString("  \\ \\ \\_\\ \\\\ \\ \\ \\ \\/\\ \\L\\ \\/\\ \\L\\ \\ \\ \\_\\ \\/\\ \\L\\ \\", -1, xOffset, yOffset+4, Color::FromHSV(h+180, 1, 1));
+            UI::Graphics::DrawString("   \\ \\____/_\\ \\ \\ \\_\\ \\___,_\\ \\____/\\ \\_____\\ \\_____\\", -1, xOffset, yOffset+5, Color::FromHSV(h+225, 1, 1));
+            UI::Graphics::DrawString("    \\/___//\\ \\_\\ \\/_/\\/__,_ /\\/___/  \\/_____/\\/_____/", -1, xOffset, yOffset+6, Color::FromHSV(h+270, 1, 1));
+            UI::Graphics::DrawString("          \\ \\____/", -1, xOffset, yOffset+7, Color::FromHSV(h+315, 1, 1));
+            UI::Graphics::DrawString("           \\/___/", -1, xOffset, yOffset+8, Color::FromHSV(h, 1, 1));
+
+            //for(int i = 0; i < 5000; i++) i;
+            h = ++h % 360;
+        }*/
     }
 
-    Terminal::PrintLine("%c0DjidOS - best OS");
-    Terminal::PrintLine("%cwThis is a test %x %s", KERNEL_OFFSET, "wow mooi man");
-    Terminal::PrintLine("%cgThis is a test %x %s", KERNEL_OFFSET, "wow man");
-    Terminal::PrintLine("%cbThis is a test %x %s", KERNEL_OFFSET, "wow mooi");
-    //Terminal::PrintLine("R: %d G: %d B: %d", Color::White.R, Color::White.G, Color::White.B);
+    Terminal::Println("It's morbin' time");
     
-/*
-    UI::Old::Clear();
 
-    UI::Old::FillRow(0, '#');
-    UI::Old::FillRow(24, '#');
+    VMM::SBRK(PAGE_SIZE);
+    Terminal::Println("Heap mapping: %x, heap size: %d", VMM::GetPhysAddr((void*)VMM::KERNEL_HEAP_START), VMM::GetHeapSize());
 
-    UI::Old::Print("DjidOS - beste OS", 1);
-    UI::Old::Print("this is a test", 2);*/
+    VMM::SBRK(2*PAGE_SIZE);
+    Terminal::Println("Heap mapping: %x, heap size: %d", VMM::GetPhysAddr((void*)VMM::KERNEL_HEAP_START + 2 * PAGE_SIZE), VMM::GetHeapSize());
 
+    VMM::SBRK(-3*PAGE_SIZE);
+    Terminal::Println("Heap mapping: %x, heap size: %d", VMM::GetPhysAddr((void*)VMM::KernelHeapEnd), VMM::GetHeapSize());
+
+    VMM::SBRK(2*PAGE_SIZE);
+    Terminal::Println("Heap mapping: %x, heap size: %d", VMM::GetPhysAddr((void*)VMM::KERNEL_HEAP_START + PAGE_SIZE), VMM::GetHeapSize());
+
+    /*
+    void* testBuffer[100];
+
+    for(int i = 0; i < 100; i++){
+        testBuffer[i] = malloc(i*10);
+        for(int j = 0; j < i * 10; j++){
+            *((uint8_t*)testBuffer[i] + j) = 0;
+        }
+        Terminal::Println("Malloc %d %x", i, testBuffer[i]);
+        Terminal::Println("Physical %x", VMM::GetPhysAddr(testBuffer[i]));
+    }
+
+    for(int i = 0; i < 100; i++){
+        free(testBuffer[i]);
+        //Terminal::Println("Check %x", testBuffer[i]);
+    }*/
+
+    Terminal::Println("No interrupts");
     while(true);
 }
 
 void enableFPU(){
-    size_t cr4;
+    uint64_t cr4;
     asm volatile("mov %%cr4, %0" : "=r"(cr4));
     cr4 |= 0x200;
     asm volatile("mov %0, %%cr4" :: "r"(cr4));

@@ -13,19 +13,20 @@ x86_64_cpp_object_files := $(patsubst $(SRCDIR)/%.cpp, $(BUILDDIR)/x86_64/%.o, $
 
 header_files :=  $(shell find include -name *.h)
 
-
 # this doesn't work, fix later
 # font_object_files := $(shell find $(BUILDDIR)/x86_64/interface/graphics -name *.font)
 
-x86_64_object_files := $(x86_64_cpp_object_files) $(x86_64_asm_object_files) $(BUILDDIR)/x86_64/kernel/interrupt_stubs.o $(BUILDDIR)/x86_64/interface/graphics/main.font
+font_source_files = $(shell find $(SRCDIR) -name *.psf)
+font_object_files = $(patsubst $(SRCDIR)/%.psf, $(BUILDDIR)/x86_64/%.font, $(font_source_files))
+
+x86_64_object_files := $(x86_64_cpp_object_files) $(x86_64_asm_object_files) $(BUILDDIR)/x86_64/kernel/interrupt_stubs.o $(font_object_files)
+	
+$(font_object_files): $(BUILDDIR)/x86_64/%.font : $(SRCDIR)/%.psf
+	objcopy -O elf64-x86-64 -B i386 -I binary $(patsubst $(BUILDDIR)/x86_64/%.font, $(SRCDIR)/%.psf, $@) $@
 
 $(BUILDDIR)/x86_64/kernel/interrupt_stubs.o: $(SRCDIR)/kernel/interrupt_stubs.cpp include/kernel/interrupt_stubs.h
 	mkdir -p $(dir $@) && \
 	g++ $(CFLAGS) -fpermissive -mno-red-zone -mgeneral-regs-only -I include $(SRCDIR)/kernel/interrupt_stubs.cpp -o $@
-
-#$(kernel_object_files): $(BUILDDIR)/kernel/%.o : $(SRCDIR)/kernel/%.cpp include/*.h
-#	mkdir -p $(dir $@) && \
-#	g++ $(CFLAGS) -I include $(patsubst $(BUILDDIR)/kernel/%.o, $(SRCDIR)/kernel/%.cpp, $@) -o $@
 
 $(x86_64_cpp_object_files): $(BUILDDIR)/x86_64/%.o : $(SRCDIR)/%.cpp $(header_files)
 	mkdir -p $(dir $@) && \

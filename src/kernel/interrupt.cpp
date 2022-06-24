@@ -1,33 +1,30 @@
 #include <kernel/interrupt.h>
 
-void DivByZeroHandler(){
+void BSOD(char* s){
     if(GRAPHICS_MODE){
-        DrawBox(0, 0, 100, 100, Color(255,0,0));
-    } else{
+        UI::Graphics::DrawBSOD(s);
+    } else {
         UI::Old::Clear();
-        UI::Old::Print("You divided by zero, nerd - rebooting", 0, -1, VgaColor::White, VgaColor::Red);
+        UI::Old::Print(s, 0, -1, VgaColor::White, VgaColor::Red);
     }
-    while(true);
+    
+    for(int i = 0; i < 1000000000; i++){ i; }
+    //IO::Out(0x64, 0xFE);
+    asm("hlt");
+}
+
+void DivByZeroHandler(){
+    BSOD("You divided by zero, nerd");
 }
 
 void PageFaultHandler(){
-    if(GRAPHICS_MODE){
-        DrawBox(0, 0, 100, 100, Color::Red);
-    } else{
-        UI::Old::Clear();
-        UI::Old::Print("Faulty page access - rebooting", 0, -1, VgaColor::White, VgaColor::Red);
-    }
+    //BSOD("Faulty page access");
+    DrawBox(0,0,100,100,Color::Red);
     while(true);
 }
 
 void UnhandledInterrupt(){
-    if(GRAPHICS_MODE){
-        DrawBox(0, 0, 100, 100, Color::Red);
-    } else{
-        UI::Old::Clear();
-        UI::Old::Print("Unforseen interrupt occurred - rebooting", 0, -1, VgaColor::White, VgaColor::Red);
-    }
-    while(true);
+    BSOD("Unhandled interrupt");
 }
 
 InterruptTableEntry::InterruptTableEntry(){
@@ -42,9 +39,9 @@ InterruptTableEntry::InterruptTableEntry(void(*handler)(struct interrupt_frame* 
 }
 
 void InterruptTableEntry::SetOffset(void(*handler)(struct interrupt_frame* frame)){
-    offset_0 = (uint16_t)(((uint64_t)handler & 0x000000000000ffff));
-    offset_1 = (uint16_t)(((uint64_t)handler & 0x00000000ffff0000) >> 16);
-    offset_2 = (uint32_t)(((uint64_t)handler & 0xffffffff00000000) >> 32);
+    offset_0 = (uint16_t)(((uintptr_t)handler & 0x000000000000ffff));
+    offset_1 = (uint16_t)(((uintptr_t)handler & 0x00000000ffff0000) >> 16);
+    offset_2 = (uint32_t)(((uintptr_t)handler & 0xffffffff00000000) >> 32);
 }
 
 namespace InterruptManager{
@@ -140,16 +137,8 @@ namespace InterruptManager{
     }
 
     void HandleInterrupt(uint8_t irq){
-        if(handlers[irq].handler != UnhandledInterrupt){
-            handlers[irq].handler();
-        } else {
-            UI::Old::Clear();
-            UI::Old::Print("Unhandled interrupt occured, code: ", 0, -1, VgaColor::White, VgaColor::Red);
-            UI::Old::Print(irq, 1, VgaColor::White, VgaColor::Red);
-            while(true);
-        }
+        handlers[irq].handler();
         
-        UI::Old::FillRow(23, '^');
         if(irq >= 0x20 && irq < 0x30){
             IO::Out(PIC1_COMMAND_PORT, 0x20);
             if(irq >= 0x2A){
