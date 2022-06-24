@@ -4,7 +4,6 @@
 #include <common/common.h>
 #include <kernel/memory/pmm.h>
 #include <kernel/memory/vmm.h>
-#include <kernel/memory/liballoc/liballoc.h>
 
 #define KERNEL_OFFSET 0xFFFFFF8000000000
 

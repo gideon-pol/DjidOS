@@ -20,7 +20,7 @@ int freesSinceMerge = 0;
 
 #define ASSERT(x) { if(!(x)){ Terminal::Println(">>> Assertion \"%s\" failed in %s, line %d\n", #x, __PRETTY_FUNCTION__, __LINE__); while(true); } }
 #define ALIGN(num, bound) ((num + bound-1) & ~(bound-1))
-#define BATCH_SIZE 0x200000
+#define BATCH_SIZE PAGE_SIZE
 #define OVERHEAD sizeof(used_block)
 
 free_block* getFreeBlock(size_t s, free_block** prevBlock){
@@ -177,7 +177,10 @@ void free(void* ptr){
         
         if(lastFreeBlock && isConnectedToSbrk(lastFreeBlock) && lastFreeBlock->size > BATCH_SIZE){
             ASSERT((uint8_t*)lastFreeBlock + lastFreeBlock->size + OVERHEAD == VMM::SBRK(0));
-            VMM::SBRK(-(lastFreeBlock->size - BATCH_SIZE));
+            /* IMPORTANT TODO:
+                change this sbrk call to move down by entire pages as that's the only way SBRK can map
+                */
+            VMM::SBRK(-(ALIGN_DOWN(lastFreeBlock->size, BATCH_SIZE)));
             lastFreeBlock->size = BATCH_SIZE;
             ASSERT(isConnectedToSbrk(lastFreeBlock));
         }
