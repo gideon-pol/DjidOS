@@ -90,6 +90,17 @@ namespace Terminal {
                         break;
                     }
                     case 'd' : {
+                        int64_t strArg = va_arg(args, int64_t);
+                        if(strArg < 0){ 
+                            DrawString("-", -1, column, printLine, textColor, bgColor);
+                            column = printNumber(column+1, -strArg, printLine);
+                        } else {
+                            column = printNumber(column, strArg, printLine);
+                        }
+                        str++;
+                        break;
+                    }
+                    case 'u' : {
                         uint64_t strArg = va_arg(args, uint64_t);
                         column = printNumber(column, strArg, printLine);
                         str++;

@@ -1,10 +1,10 @@
 #include <interface.h>
 #include <kernel/interrupt.h>
 #include <kernel/io.h>
-#include <drivers/keyboard.h>
-#include <drivers/mouse.h>
 #include <kernel/multiboot2.h>
 #include <kernel/memory.h>
+#include <drivers/keyboard.h>
+#include <drivers/mouse.h>
 
 extern uintptr_t _KernelStart;
 /* IMPORTANT:
@@ -156,7 +156,7 @@ void kernel_main(KernelInfo info){
 
     Terminal::Println("It's morbin' time");
     
-
+/*
     VMM::SBRK(PAGE_SIZE);
     Terminal::Println("Heap mapping: %x, heap size: %d", VMM::GetPhysAddr((void*)VMM::KERNEL_HEAP_START), VMM::GetHeapSize());
 
@@ -167,26 +167,44 @@ void kernel_main(KernelInfo info){
     Terminal::Println("Heap mapping: %x, heap size: %d", VMM::GetPhysAddr((void*)VMM::KernelHeapEnd), VMM::GetHeapSize());
 
     VMM::SBRK(2*PAGE_SIZE);
-    Terminal::Println("Heap mapping: %x, heap size: %d", VMM::GetPhysAddr((void*)VMM::KERNEL_HEAP_START + PAGE_SIZE), VMM::GetHeapSize());
+    Terminal::Println("Heap mapping: %x, heap size: %d", VMM::GetPhysAddr((void*)VMM::KERNEL_HEAP_START + PAGE_SIZE), VMM::GetHeapSize());*/
 
-    /*
-    void* testBuffer[100];
+    void* testBuffer[10000];
 
     for(int i = 0; i < 100; i++){
-        testBuffer[i] = malloc(i*10);
-        for(int j = 0; j < i * 10; j++){
-            *((uint8_t*)testBuffer[i] + j) = 0;
+        Terminal::Println("Malloc %d, %d", i, i*10000);
+
+        testBuffer[i] = malloc(i*10000);
+        if(testBuffer[i] != nullptr){
+            if(VMM::GetPhysAddr(testBuffer[i]) == (void*)-1){
+                Terminal::Println("Virtual %x", testBuffer[i]);
+
+                Terminal::Println("Physical %x", VMM::GetPhysAddr(testBuffer[i]));
+                Terminal::Println("Something went wrong with the paging!");
+                while (true);
+            }
+            for(int j = 0; j < i * 10; j++){
+                *((uint8_t*)testBuffer[i] + j) = 0;
+            }
+
+            //Terminal::Println("Virtual %x", testBuffer[i]);
+            //Terminal::Println("Physical %x", VMM::GetPhysAddr(testBuffer[i]));
+        } else {
+            Terminal::Println("Out of memory!");
+            while (true);       
         }
-        Terminal::Println("Malloc %d %x", i, testBuffer[i]);
-        Terminal::Println("Physical %x", VMM::GetPhysAddr(testBuffer[i]));
     }
 
     for(int i = 0; i < 100; i++){
-        free(testBuffer[i]);
-        //Terminal::Println("Check %x", testBuffer[i]);
-    }*/
+        Terminal::Println("Freeing %x", testBuffer[i]);
 
-    Terminal::Println("No interrupts");
+        free(testBuffer[i]);
+    }
+
+    void* x = malloc(100);
+
+    Terminal::Println("Malloc test %x, physical %x", x, VMM::GetPhysAddr(x));
+    Terminal::Println("%cgNo interrupts%cw");
     while(true);
 }
 

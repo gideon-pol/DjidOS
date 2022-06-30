@@ -92,7 +92,9 @@ void *malloc(size_t size){
     if(freeBlock == NULL){
         if(prevBlock == NULL || !isConnectedToSbrk(prevBlock)){
             size_t batchSize = ALIGN(size + OVERHEAD, BATCH_SIZE);
-            if((intptr_t)(freeBlock = (free_block*)VMM::SBRK(batchSize)) == -1) return NULL;
+            free_block* newBlock = (free_block*)VMM::SBRK(batchSize);
+            if((intptr_t)newBlock == -1) return nullptr;
+            freeBlock = newBlock;
 
             if(prevBlock == NULL){
                 freeList = freeBlock;
@@ -105,17 +107,16 @@ void *malloc(size_t size){
         } else {
             ASSERT(prevBlock->next == NULL);
             size_t batchSize = ALIGN(size - prevBlock->size, BATCH_SIZE);
+            
+            //ASSERT((intptr_t)VMM::SBRK(batchSize) != -1);
+            if((intptr_t)VMM::SBRK(batchSize) == -1) return nullptr;
             freeBlock = prevBlock;
             freeBlock->size += batchSize;
-            ASSERT((intptr_t)VMM::SBRK(batchSize) != -1);
-            if((intptr_t)VMM::SBRK(batchSize) == -1) return NULL;
 
             prevBlock = getPreviousLinkedBlock(freeBlock);
         }
     }
 
-
-    
     splitBlock(freeBlock, size, prevBlock);
     used_block* used = (used_block*)freeBlock;
 
@@ -180,8 +181,11 @@ void free(void* ptr){
             /* IMPORTANT TODO:
                 change this sbrk call to move down by entire pages as that's the only way SBRK can map
                 */
+
+            ASSERT(ALIGN_DOWN((int64_t)lastFreeBlock->size, BATCH_SIZE) <= lastFreeBlock->size);
             VMM::SBRK(-(ALIGN_DOWN(lastFreeBlock->size, BATCH_SIZE)));
-            lastFreeBlock->size = BATCH_SIZE;
+            lastFreeBlock->size = BATCH_SIZE - OVERHEAD;
+
             ASSERT(isConnectedToSbrk(lastFreeBlock));
         }
 

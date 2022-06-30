@@ -13,7 +13,7 @@
 #define P1INDEX(vaddr) ( (uint64_t)vaddr & 0x1FFFFF )
 
 #define ALIGN(num, bound) ((num + bound-1) & ~(bound-1))
-#define ALIGN_DOWN(num, bound) (num - num % bound)
+#define ALIGN_DOWN(num, bound) (num / bound * bound)
 
 void *malloc(size_t size);
 void *calloc(size_t nmemb, size_t size);
