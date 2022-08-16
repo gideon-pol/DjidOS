@@ -12,6 +12,23 @@ namespace UI{
             bool initialized = false;
         }
 
+        bool Color::operator==(const Color& other){ return R == other.R && G == other.G && B == other.B && A == other.A; }
+        bool Color::operator!=(const Color& other){ return R != other.R || G != other.G || B != other.B || A != other.A; }
+
+        uint32_t Color::ToInt(){
+            return (R << 16) | (G << 8) | B;
+        }
+
+        /*
+        Color Color::Black = Color(0, 0, 0);
+        Color Color::Blue = Color(0, 0, 255);
+        Color Color::Green = Color(0, 255, 0);
+        Color Color::Cyan = Color(0, 255, 255);
+        Color Color::Red = Color(255, 0, 0);
+        Color Color::Orange = Color(255, 180, 0);
+        Color Color::White = Color(255, 255, 255);
+        Color Color::Transparent = Color(0, 0, 0, 0);*/
+
         Frame CurrentFrame;
         PSF_Font* Font;
 
@@ -19,11 +36,18 @@ namespace UI{
         uint16_t Frame::GetColumns(){ return Width/Font->width; }
         uint16_t Frame::GetRows(){ return Height/Font->height; }
 
-        uint32_t Color::ToInt(){
-            return (R << 16) | (G << 8) | B;
-        }
-
         void Setup(uint16_t width, uint16_t height, uintptr_t framebuffer){
+            // Really ugly and horrible. Necessary for now because of static shenanigans with C++. Fix later.
+            /*
+            Color::Black = Color(0, 0, 0);
+            Color::Blue = Color(0, 0, 255);
+            Color::Green = Color(0, 255, 0);
+            Color::Cyan = Color(0, 255, 255);
+            Color::Red = Color(255, 0, 0);
+            Color::Orange = Color(255, 180, 0);
+            Color::White = Color(255, 255, 255);
+            Color::Transparent = Color(0, 0, 0, 0);*/
+
             uintptr_t mappedFramebuffer = ALIGN(FRAMEBUFFER, PAGE_SIZE);
 
             int frameBufferBytesToMap = width * height * 4;
@@ -38,6 +62,7 @@ namespace UI{
 
             CurrentFrame = Frame(width, height, mappedFramebuffer);
             Font = (PSF_Font*)&_binary_src_main_psf_start;
+
             if(Font->magic != 0x864AB572) crash();
             initialized = true;
         }
@@ -59,12 +84,15 @@ namespace UI{
             }
         }
 
+        void DrawPixel(int x, int y, Color color){
+            *((uint32_t*)FRAMEBUFFER + x + y * Font->width) = color.ToInt();
+        }
+
         void DrawString(char* s, uint16_t column, uint16_t row, Color textColor, Color bgColor){
             DrawString(s, -1, row, column, textColor, bgColor);
         }
 
-        void DrawString(char* s, int len, uint16_t column, uint16_t row, Color textColor, Color bgColor){
-            Font = (PSF_Font*)&_binary_src_main_psf_start;
+        void DrawString(char* s, int len, uint16_t column, uint16_t row, Color textColor, Color bgColor, bool debug){
             uint8_t* fontTable = (uint8_t*)Font + Font->headersize;
 
             uint16_t bytesPerLine = (Font->width + 7) / 8;
@@ -76,16 +104,18 @@ namespace UI{
             uint32_t textColorInt = textColor.ToInt();
             uint32_t bgColorInt = bgColor.ToInt();
 
+            uint8_t* check;
+
             for(int i = 0; i < strLen; i++){
                 uint8_t* glyph = (uint8_t*)(fontTable + s[i] * Font->charSize);
 
                 for(int y = 0; y < Font->height; y++){
                     int row = (y + yOffset) * CurrentFrame.Width;
-
+                    
                     for(int x = 0; x < Font->width; x++){
                         if(glyph[x/8] & (0b10000000 >> (x & 0b111))){
                             *((uint32_t*)FRAMEBUFFER + row + x + xOffset) = textColorInt;
-                        } else if(bgColor != Color::Transparent){
+                        } else if(bgColor.A != 0){
                             *((uint32_t*)FRAMEBUFFER + row + x + xOffset) = bgColorInt;
                         }
                     }

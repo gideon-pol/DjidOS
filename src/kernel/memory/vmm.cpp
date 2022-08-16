@@ -90,7 +90,6 @@ namespace VMM{
             }
         }
 
-        asm("int $0x6");
         return nullptr;
     }
 
@@ -139,44 +138,37 @@ namespace VMM{
 
         if(s < 0){
             size_t pagesToMove = -s / PAGE_SIZE;
-            Terminal::Println("Moving down by %d bytes, %d pages, total heap page count: %d, %d", -s, pagesToMove, ((uintptr_t)KernelHeapEnd - (uintptr_t)KERNEL_HEAP_START)/PAGE_SIZE, s % PAGE_SIZE);
-            //while(true);
+            //Terminal::Println("Moving down by %ld bytes, %ld pages, total heap page count: %ld, %ld", -s, pagesToMove, ((uintptr_t)KernelHeapEnd - (uintptr_t)KERNEL_HEAP_START)/PAGE_SIZE, s % PAGE_SIZE);
 
             for(int i = 0; i < pagesToMove && KernelHeapEnd != KERNEL_HEAP_START; i++){
                 KernelHeapEnd = (uint8_t*)KernelHeapEnd - PAGE_SIZE;
                 uintptr_t phaddr = (uintptr_t)GetPhysAddr(KernelHeapEnd);
                 UnmapPage(KernelHeapEnd);
-                Terminal::Println("Unmapped page");
+                //Terminal::Println("Unmapped page");
 
                 PMM::FreePages(phaddr);
-                Terminal::Println("Freed page");
+                //Terminal::Println("Freed page");
             }
 
-            Terminal::Println("Heap pages left: %d", ((uintptr_t)KernelHeapEnd - (uintptr_t)KERNEL_HEAP_START)/PAGE_SIZE);
-            Terminal::Println("Kernel start mapping: %x", VMM::GetPhysAddr((void*)KERNEL_HEAP_START));
+            //Terminal::Println("Heap pages left: %ld", ((uintptr_t)KernelHeapEnd - (uintptr_t)KERNEL_HEAP_START)/PAGE_SIZE);
+            //Terminal::Println("Kernel start mapping: %lx", VMM::GetPhysAddr((void*)KERNEL_HEAP_START));
 
-            Terminal::Println("Done moving down program heap");
-
+            //Terminal::Println("Done moving down program heap");
         } else if(s > 0) {
             size_t pagesToMove = ALIGN(s, PAGE_SIZE) / PAGE_SIZE;
 
             for(int i = 0; i < pagesToMove; i++){
-                Terminal::Println("Allocating new page");
+                //Terminal::Println("Allocating new page");
                 void* page = PMM::AllocatePage();
                 if(page == (void*)-1){
                     return (void*)-1;
                 }
-                Terminal::Println("VMM Allocated page: %x", page);
+                //Terminal::Println("VMM Allocated page: %lx", page);
                 MapPage(page, KernelHeapEnd);
-                *(uint64_t*)KernelHeapEnd = 0x0;
-                Terminal::Println("Succesfully mapped to %x", KernelHeapEnd);
 
                 KernelHeapEnd = (void*)((uintptr_t)KernelHeapEnd + PAGE_SIZE);
             }
         }
-
-        Terminal::Println("Sbrk done");
-
 
         return originalEnd;
     }
@@ -185,15 +177,3 @@ namespace VMM{
         return (uint64_t)KernelHeapEnd - (uint64_t)KERNEL_HEAP_START;
     }
 }
-
-/*
-namespace Memory{
-    void* Alloc(size_t s){
-
-    }
-
-    void Free(void* region){
-
-    }
-
-}*/

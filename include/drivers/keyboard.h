@@ -4,6 +4,7 @@
 #include <drivers/driver.h>
 #include <common/common.h>
 
+#define KEYBOARD_IRQ 0x21
 #define SCANCODE_KEY_RELEASED 0b10000000
 
 class KeyboardDriver// : public Driver

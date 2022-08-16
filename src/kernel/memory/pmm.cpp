@@ -40,7 +40,7 @@ namespace PMM{
     }
 
     void* AllocatePage(){
-        Terminal::Println("Page allocation requested");
+        //Terminal::Println("Page allocation requested");
         for(int i = 0; i < bitmap.Count; i++){
             if(!bitmap[i]){
                 uintptr_t allocatedAddress = i * PAGE_SIZE;
@@ -49,7 +49,7 @@ namespace PMM{
             }
         }
 
-        Terminal::Println("%crPage allocation failed, out of memory%cw");
+        //Terminal::Println("%crPage allocation failed, out of memory%cw");
         while(true);
 
         return (void*)-1;

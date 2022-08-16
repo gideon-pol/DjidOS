@@ -3,6 +3,7 @@
 #include <kernel/io.h>
 #include <kernel/multiboot2.h>
 #include <kernel/memory.h>
+#include <kernel/scheduling/timer.h>
 #include <drivers/keyboard.h>
 #include <drivers/mouse.h>
 
@@ -23,6 +24,8 @@ struct KernelInfo {
 
 void enableFPU();
 void kernel_main(KernelInfo);
+
+int testI = 0;
 
 extern "C"
 void prekernel(uintptr_t multiboot_info_addr){
@@ -63,26 +66,6 @@ void prekernel(uintptr_t multiboot_info_addr){
                 info.framebuffer = tagfb->common.framebuffer_addr;
                 info.frame_width = tagfb->common.framebuffer_width;
                 info.frame_height = tagfb->common.framebuffer_height;
-                
-                /*
-                switch(tagfb->common.framebuffer_type){
-                    case MULTIBOOT_FRAMEBUFFER_TYPE_INDEXED: {
-                        //*(uint32_t*)(0x1000) = 0;
-                        break;
-                    }
-                    case MULTIBOOT_FRAMEBUFFER_TYPE_RGB: {
-                        //*(uint32_t*)(0x1000) = 1;
-                        break;
-                    }
-                    case MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT: {
-                        //*(uint32_t*)(0x1000) = 2;
-                        break;
-                    }
-                    default: {
-                        //*(uint32_t*)(0x1000) = 3;
-                        break;
-                    }
-                }*/
             }
         }
     }
@@ -94,25 +77,17 @@ void prekernel(uintptr_t multiboot_info_addr){
 }
 
 void kernel_main(KernelInfo info){
+    enableFPU();
     InterruptManager::Initialize();
     
     UI::Graphics::Setup(info.frame_width, info.frame_height, info.framebuffer);    
     Terminal::Setup();
 
-    Terminal::Println("Framebuffer setup completed");
-    Terminal::Println("Initialized terminal");
-
     keyboardDriver.Initialize();
-    Terminal::Println("%cgSuccessfully started keyboard driver%cw");
-
     mouseDriver.Initialize();
-    Terminal::Println("%cgSuccessfully started mouse driver%cw");
+    Timer::Setup();
 
     InterruptManager::RemapPIC();
-    Terminal::Println("Remapped PIC chip");
-
-    Terminal::Println("Enabling FPU");
-    enableFPU();
 
     // Landing screen
     {
@@ -136,7 +111,6 @@ void kernel_main(KernelInfo info){
 
         
         //THIS DRAWS A FUNNY RAINBOW LANDING SCREEN
-        /*
         int h = 0;
         while(true){
             UI::Graphics::DrawString(" _____                __          _____   _____", -1, xOffset, yOffset+0, Color::FromHSV(h, 1, 1));
@@ -149,26 +123,13 @@ void kernel_main(KernelInfo info){
             UI::Graphics::DrawString("          \\ \\____/", -1, xOffset, yOffset+7, Color::FromHSV(h+315, 1, 1));
             UI::Graphics::DrawString("           \\/___/", -1, xOffset, yOffset+8, Color::FromHSV(h, 1, 1));
 
-            //for(int i = 0; i < 5000; i++) i;
             h = ++h % 360;
-        }*/
+        }
     }
 
     Terminal::Println("It's morbin' time");
-    
+
 /*
-    VMM::SBRK(PAGE_SIZE);
-    Terminal::Println("Heap mapping: %x, heap size: %d", VMM::GetPhysAddr((void*)VMM::KERNEL_HEAP_START), VMM::GetHeapSize());
-
-    VMM::SBRK(2*PAGE_SIZE);
-    Terminal::Println("Heap mapping: %x, heap size: %d", VMM::GetPhysAddr((void*)VMM::KERNEL_HEAP_START + 2 * PAGE_SIZE), VMM::GetHeapSize());
-
-    VMM::SBRK(-3*PAGE_SIZE);
-    Terminal::Println("Heap mapping: %x, heap size: %d", VMM::GetPhysAddr((void*)VMM::KernelHeapEnd), VMM::GetHeapSize());
-
-    VMM::SBRK(2*PAGE_SIZE);
-    Terminal::Println("Heap mapping: %x, heap size: %d", VMM::GetPhysAddr((void*)VMM::KERNEL_HEAP_START + PAGE_SIZE), VMM::GetHeapSize());*/
-
     void* testBuffer[10000];
 
     for(int i = 0; i < 100; i++){
@@ -177,9 +138,9 @@ void kernel_main(KernelInfo info){
         testBuffer[i] = malloc(i*10000);
         if(testBuffer[i] != nullptr){
             if(VMM::GetPhysAddr(testBuffer[i]) == (void*)-1){
-                Terminal::Println("Virtual %x", testBuffer[i]);
+                Terminal::Println("Virtual %lx", testBuffer[i]);
 
-                Terminal::Println("Physical %x", VMM::GetPhysAddr(testBuffer[i]));
+                Terminal::Println("Physical %lx", VMM::GetPhysAddr(testBuffer[i]));
                 Terminal::Println("Something went wrong with the paging!");
                 while (true);
             }
@@ -187,8 +148,8 @@ void kernel_main(KernelInfo info){
                 *((uint8_t*)testBuffer[i] + j) = 0;
             }
 
-            //Terminal::Println("Virtual %x", testBuffer[i]);
-            //Terminal::Println("Physical %x", VMM::GetPhysAddr(testBuffer[i]));
+            //Terminal::Println("Virtual %lx", testBuffer[i]);
+            //Terminal::Println("Physical %lx", VMM::GetPhysAddr(testBuffer[i]));
         } else {
             Terminal::Println("Out of memory!");
             while (true);       
@@ -196,16 +157,12 @@ void kernel_main(KernelInfo info){
     }
 
     for(int i = 0; i < 100; i++){
-        Terminal::Println("Freeing %x", testBuffer[i]);
+        Terminal::Println("Freeing %lx", testBuffer[i]);
 
         free(testBuffer[i]);
     }
 
-    void* x = malloc(100);
-
-    Terminal::Println("Malloc test %x, physical %x", x, VMM::GetPhysAddr(x));
-    Terminal::Println("%cgNo interrupts%cw");
-    while(true);
+    void* x = malloc(100);*/
 }
 
 void enableFPU(){

@@ -51,6 +51,7 @@ namespace Terminal {
     void Setup(){
         totalColumns = CurrentFrame.Width / Font->width - 1;
         totalRows = CurrentFrame.Height / Font->height - 1;
+        textColor = Color(255, 255, 255);
     }
 
     void AddInputCharacter(char c){
@@ -90,28 +91,63 @@ namespace Terminal {
                         break;
                     }
                     case 'd' : {
-                        int64_t strArg = va_arg(args, int64_t);
+                        int32_t strArg = va_arg(args, int32_t);
                         if(strArg < 0){ 
                             DrawString("-", -1, column, printLine, textColor, bgColor);
-                            column = printNumber(column+1, -strArg, printLine);
+                            column = printNumber(column+1, (uint32_t)-strArg, printLine);
                         } else {
-                            column = printNumber(column, strArg, printLine);
+                            column = printNumber(column, (uint32_t)strArg, printLine);
                         }
                         str++;
                         break;
                     }
                     case 'u' : {
-                        uint64_t strArg = va_arg(args, uint64_t);
+                        uint32_t strArg = va_arg(args, uint32_t);
                         column = printNumber(column, strArg, printLine);
                         str++;
                         break;
                     }
                     case 'x' : {
-                        uint64_t strArg = va_arg(args, uint64_t);
+                        uint32_t strArg = va_arg(args, uint32_t);
                         DrawString("0x", -1, column, printLine, textColor, bgColor);
                         column += 2;
                         column = printNumberHex(column, strArg, printLine);
                         str++;
+                        break;
+                    }
+
+                    case 'l' : {
+                        switch (*(str+2))
+                        {
+                            case 'd' : {
+                                int64_t strArg = va_arg(args, int64_t);
+                                if(strArg < 0){ 
+                                    DrawString("-", -1, column, printLine, textColor, bgColor);
+                                    column = printNumber(column+1, -strArg, printLine);
+                                } else {
+                                    column = printNumber(column, strArg, printLine);
+                                }
+                                str++;
+                                break;
+                            }
+                            case 'u' : {
+                                uint64_t strArg = va_arg(args, uint64_t);
+                                column = printNumber(column, strArg, printLine);
+                                str++;
+                                break;
+                            }
+                            case 'x' : {
+                                uint64_t strArg = va_arg(args, uint64_t);
+                                DrawString("0x", -1, column, printLine, textColor, bgColor);
+                                column += 2;
+                                column = printNumberHex(column, strArg, printLine);
+                                str++;
+                                break;
+                            }
+                        }
+
+                        str += 2;
+
                         break;
                     }
 

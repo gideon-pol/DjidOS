@@ -8,21 +8,26 @@ namespace UI{
     namespace Graphics{
         class Color{
             public:
+            
             enum ColorEnum : uint16_t {
                 Black, Blue, Green, Cyan, Red, Orange, Magenta, Brown, LightGrey, DarkGrey, Pink, Yellow, White, Transparent
             };
 
             Color() {}
-            Color(uint8_t r, uint8_t g, uint8_t b) {
-                R = r;
-                G = g;
-                B = b;
-            }
+            Color(uint8_t r, uint8_t g, uint8_t b) : R(r), G(g), B(b) { };
             Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) : R(r), G(g), B(b), A(a) {}
 
-            bool operator ==(Color other){ return R == other.R && G == other.G && B == other.B && A == other.A; }
-            bool operator !=(Color other){ return R != other.R || G != other.G || B != other.B || A != other.A; }
-
+            bool operator ==(const Color& other);
+            bool operator !=(const Color& other);
+/*
+            static Color Black;
+            static Color Blue;
+            static Color Green;
+            static Color Cyan;
+            static Color Red;
+            static Color Orange;
+            static Color White;
+            static Color Transparent;*/
             uint32_t ToInt();
             
             constexpr Color(ColorEnum code){
@@ -99,7 +104,7 @@ namespace UI{
                 return out;     
             }
 
-            uint8_t R = 255;
+            uint8_t R = 0;
             uint8_t G = 0;
             uint8_t B = 0;
             uint8_t A = 255;
@@ -135,8 +140,9 @@ namespace UI{
 
         void Setup(uint16_t width, uint16_t height, uintptr_t framebuffer);
         void DrawBox(int x, int y, uint16_t sizeX, uint16_t sizeY, Color innerColor = Color::White, int outlineSize = 0, Color outlineColor = Color::White);    
+        void DrawPixel(int x, int y, Color color = Color::White);
         void DrawString(char* s, uint16_t column, uint16_t row, Color textColor = Color::White, Color bgColor = Color::Transparent);
-        void DrawString(char* s, int len, uint16_t column, uint16_t row, Color textColor = Color::White, Color bgColor = Color::Transparent);
+        void DrawString(char* s, int len, uint16_t column, uint16_t row, Color textColor = Color::White, Color bgColor = Color::Transparent, bool debug = false);
         void DrawBSOD(char* s);
         bool IsInitialized();
     }

@@ -1,7 +1,4 @@
 #include <drivers/mouse.h>
-#include <kernel/io.h>
-#include <kernel/interrupt.h>
-#include <interface.h>
 
 MouseDriver mouseDriver = MouseDriver();
 
@@ -22,12 +19,10 @@ void MouseDriver::Initialize(){
 
     IO::In(0x60);
 
-    //UI::Print((void(*)())&MouseDriver::HandleInterrupt, 10);
-
     InterruptManager::SetHandler(0x2C, (void (*)())&MouseDriver::HandleInterrupt);
 } 
 
-void MouseDriver::HandleInterrupt(){
+void MouseDriver::HandleInterrupt(int_frame* frame){
     uint8_t status = IO::In(0x64);
     uint8_t buffer[3];
     uint8_t packetNumber = 0;
@@ -39,11 +34,7 @@ void MouseDriver::HandleInterrupt(){
             buffer[packetNumber] = packet;
             packetNumber = (packetNumber + 1) % 3;
  
-            if(packetNumber == 0){ 
-                //UI::Old::PrintByte(buffer[0], 3);
-                //UI::Old::PrintByte(buffer[1], 4);
-                //UI::Old::PrintByte(buffer[2], 5);
-
+            if(packetNumber == 0){
                 if(buffer[0] & 0b00001000){
                     if(buffer[0] & 0b00000001){
                         //UI::Old::Print("Left mouse button clicked!", 6);
@@ -65,4 +56,7 @@ void MouseDriver::HandleInterrupt(){
 
         status = IO::In(0x64);
     }
+
+    IO::Out(PIC1_COMMAND_PORT, 0x20);
+    IO::Out(PIC2_COMMAND_PORT, 0x20);
 }

@@ -6,7 +6,7 @@
 KeyboardDriver keyboardDriver = KeyboardDriver();
 
 void KeyboardDriver::Initialize(){
-    InterruptManager::SetHandler(0x21, (void(*)())&KeyboardDriver::HandleInterrupt);
+    InterruptManager::SetHandler(KEYBOARD_IRQ, (void(*)())&KeyboardDriver::HandleInterrupt);
 }
 
 void KeyboardDriver::HandleInterrupt(){

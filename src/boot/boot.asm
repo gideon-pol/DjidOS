@@ -74,7 +74,6 @@ upper_half_jump_64:
     add rsp, rax
 
     mov rax, gdt64.pointer
-
     lgdt [rax]
     mov rax, 0x0
     mov ss, rax

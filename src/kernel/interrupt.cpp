@@ -1,6 +1,56 @@
 #include <kernel/interrupt.h>
 
+InterruptHandler handlers[256];
+
+extern "C" void Handler0x0(void);
+extern "C" void Handler0x1(void);
+extern "C" void Handler0x2(void);
+extern "C" void Handler0x3(void);
+extern "C" void Handler0x4(void);
+extern "C" void Handler0x5(void);
+extern "C" void Handler0x6(void);
+extern "C" void Handler0x7(void);
+extern "C" void Handler0x8(void);
+extern "C" void Handler0x9(void);
+extern "C" void Handler0xA(void);
+extern "C" void Handler0xB(void);
+extern "C" void Handler0xC(void);
+extern "C" void Handler0xD(void);
+extern "C" void Handler0xE(void);
+extern "C" void Handler0xF(void);
+extern "C" void Handler0x10(void);
+extern "C" void Handler0x11(void);
+extern "C" void Handler0x12(void);
+extern "C" void Handler0x13(void);
+extern "C" void Handler0x14(void);
+extern "C" void Handler0x15(void);
+extern "C" void Handler0x16(void);
+extern "C" void Handler0x17(void);
+extern "C" void Handler0x18(void);
+extern "C" void Handler0x19(void);
+extern "C" void Handler0x1A(void);
+extern "C" void Handler0x1B(void);
+extern "C" void Handler0x1C(void);
+extern "C" void Handler0x1D(void);
+extern "C" void Handler0x1E(void);
+extern "C" void Handler0x1F(void);
+extern "C" void Handler0x20(void);
+extern "C" void Handler0x21(void);
+extern "C" void Handler0x22(void);
+extern "C" void Handler0x23(void);
+extern "C" void Handler0x24(void);
+extern "C" void Handler0x25(void);
+extern "C" void Handler0x26(void);
+extern "C" void Handler0x27(void);
+extern "C" void Handler0x28(void);
+extern "C" void Handler0x29(void);
+extern "C" void Handler0x2A(void);
+extern "C" void Handler0x2B(void);
+extern "C" void Handler0x2C(void);
+
 void BSOD(char* s){
+    asm("cli");
+
     if(GRAPHICS_MODE){
         UI::Graphics::DrawBSOD(s);
     } else {
@@ -18,9 +68,17 @@ void DivByZeroHandler(){
 }
 
 void PageFaultHandler(){
+    asm("cli");
+
     //BSOD("Faulty page access");
+
+    uintptr_t faultingAddress;
+    asm("mov %0, %%cr2" : "=r"(faultingAddress));
+    
     DrawBox(0,0,100,100,Color::Red);
-    while(true);
+
+    Terminal::Println("Faulting address: %lx", faultingAddress);
+    asm("hlt");
 }
 
 void UnhandledInterrupt(){
@@ -32,13 +90,13 @@ InterruptTableEntry::InterruptTableEntry(){
     selector = 0x8;
 }
 
-InterruptTableEntry::InterruptTableEntry(void(*handler)(struct interrupt_frame* frame)){
+InterruptTableEntry::InterruptTableEntry(void(*handler)()){
     type_attributes = IDT_InterruptGate;
     selector = 0x8;
     SetOffset(handler);
 }
 
-void InterruptTableEntry::SetOffset(void(*handler)(struct interrupt_frame* frame)){
+void InterruptTableEntry::SetOffset(void(*handler)()){
     offset_0 = (uint16_t)(((uintptr_t)handler & 0x000000000000ffff));
     offset_1 = (uint16_t)(((uintptr_t)handler & 0x00000000ffff0000) >> 16);
     offset_2 = (uint32_t)(((uintptr_t)handler & 0xffffffff00000000) >> 32);
@@ -49,7 +107,6 @@ namespace InterruptManager{
     uint64_t base = 0;
 
     InterruptTableEntry idt[256];
-    InterruptHandler handlers[256];
 
     void Initialize(){
         limit = sizeof(InterruptTableEntry) * 256 - 1;
@@ -73,7 +130,7 @@ namespace InterruptManager{
         SetInterruptEntry(0xB, InterruptTableEntry(&Handler0xB), &UnhandledInterrupt);
         SetInterruptEntry(0xC, InterruptTableEntry(&Handler0xC), &UnhandledInterrupt);
         SetInterruptEntry(0xD, InterruptTableEntry(&Handler0xD), &UnhandledInterrupt);
-        SetInterruptEntry(0xE, InterruptTableEntry(&Handler0xE), &PageFaultHandler);
+        SetInterruptEntry(0xE, InterruptTableEntry(&PageFaultHandler), &UnhandledInterrupt);
         SetInterruptEntry(0xF, InterruptTableEntry(&Handler0xF), &UnhandledInterrupt);
 
         SetInterruptEntry(0x20, InterruptTableEntry(&Handler0x20), &UnhandledInterrupt);
@@ -123,6 +180,7 @@ namespace InterruptManager{
         
         IO::Out(PIC1_DATA_PORT, 0b11111001);
         IO::Out(PIC2_DATA_PORT, 0b11101111);
+
         asm("sti");
     }
 
@@ -136,12 +194,18 @@ namespace InterruptManager{
         handlers[irq].handler = handler;
     }
 
-    void HandleInterrupt(uint8_t irq){
-        handlers[irq].handler();
+    void HandleInterrupt(int_frame* frame){
+        if((void*)handlers[frame->int_number].handler == (void*)&UnhandledInterrupt){
+            //BSOD("unhandled interrupt");
+            Terminal::Println("%crUnhandled interrupt: irq: %d\n", frame->int_number);
+            asm("hlt");
+        }
+
+        handlers[frame->int_number].handler();
         
-        if(irq >= 0x20 && irq < 0x30){
+        if(frame->int_number >= 0x20 && frame->int_number < 0x30){
             IO::Out(PIC1_COMMAND_PORT, 0x20);
-            if(irq >= 0x2A){
+            if(frame->int_number >= 0x2A){
                 IO::Out(PIC2_COMMAND_PORT, 0x20);
             }
         }
