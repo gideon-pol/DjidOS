@@ -96,6 +96,7 @@ namespace Scheduler{
 
         if(taskCount == 0){
             currentTask = -1;
+            idle->CpuTime++;
             load_cpu_state(idle->State);
         }
 
@@ -106,6 +107,7 @@ namespace Scheduler{
             if(t->IsAlive){
                 if(t->ShouldStop){
                     t->IsAlive = false;
+                    Tasks[(currentTask + i) % MAX_TASK_COUNT] = nullptr;
                     continue;
                 }
                 if(t->IsSleeping()){
@@ -122,6 +124,7 @@ namespace Scheduler{
             load_cpu_state(Tasks[currentTask].State);
         } else {
             currentTask = -1;
+            idle->CpuTime++;
             load_cpu_state(idle->State);
         }
     }
@@ -129,5 +132,9 @@ namespace Scheduler{
     Task* GetCurrentTask(){
         if(currentTask == -1) return nullptr;
         return &Tasks[currentTask];
+    }
+
+    uint64_t GetIdleTime(){
+        return idle->CpuTime;
     }
 }

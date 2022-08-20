@@ -43,6 +43,7 @@ namespace Scheduler{
     Task* StartTask(Task t);
     void ScheduleNext(cpu_state* state);
     Task* GetCurrentTask();
+    uint64_t GetIdleTime();
 }
 
 #endif

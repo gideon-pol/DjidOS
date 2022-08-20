@@ -5,6 +5,7 @@
 #include <kernel/memory.h>
 #include <kernel/scheduling/time.h>
 #include <kernel/scheduling/scheduler.h>
+#include <kernel/scheduling/locking.h>
 #include <drivers/keyboard.h>
 #include <drivers/mouse.h>
 
@@ -44,13 +45,10 @@ void prekernel(uintptr_t multiboot_info_addr){
                 struct multiboot_tag_mmap *mmapTag = (struct multiboot_tag_mmap*) tag;
                 multiboot_memory_map_t* largestArea = nullptr;
 
-                int i = 0;
                 for (mmap = mmapTag->entries;
                       (uint8_t*)mmap < (uint8_t*)tag + tag->size;
                       mmap = (multiboot_memory_map_t *)((uintptr_t)mmap + mmapTag->entry_size))
                 {
-                    i += 3;
-                    
                     switch(mmap->type){
                         case MULTIBOOT_MEMORY_AVAILABLE: {
                             if(largestArea == nullptr || mmap->len >= largestArea->len) largestArea = mmap;
@@ -75,13 +73,27 @@ void prekernel(uintptr_t multiboot_info_addr){
     kernel_main(info);
 }
 
-void Task1(){
-    int i = 0;
+void UselessTask(){
     while(true){
-        DrawBox(0, 0, CurrentFrame.Width, CurrentFrame.Height, Color::White);
         Task::Wait(1000);
-        DrawBox(0, 0, CurrentFrame.Width, CurrentFrame.Height, Color::Black);
-        Task::Wait(1000);
+    }
+}
+
+void Task1(){
+    char* text = "Wow this is running in a separate task";
+    int strLen = strlen(text);
+
+    int h = 0;
+
+    int yOffset = CurrentFrame.GetRows() / 2 + 5;
+
+    while(true){
+        int xOffset = (CurrentFrame.GetColumns() - strlen(text)) / 2;
+        for(int i = 0; i < strLen; i++){
+            DrawString(&text[i], 1, xOffset+i, yOffset, Color::FromHSV(360.0 / strLen * i + h, 1, 1));
+        }
+        h++;
+        Task::Wait(50);
     }
 }
 
@@ -104,6 +116,7 @@ void Task2(){
         UI::Graphics::DrawString("           \\/___/", -1, xOffset, yOffset+8, Color::FromHSV(h, 1, 1));
 
         h = ++h % 360;
+        Task::Wait(10);
     }
 }
 
@@ -111,18 +124,27 @@ void Profiler(){
     Task* t = Scheduler::GetCurrentTask();
 
     while(true){
+        DrawBox(0, 0, 500, 300, Color::Black);
+
         int j = 0;
         for(int i = 0; i < MAX_TASK_COUNT; i++){
-            if(Scheduler::Tasks[i].IsAlive){
+            Task* ta = &Scheduler::Tasks[i];
+            if(ta->IsAlive){
+
                 if(t == &Scheduler::Tasks[i]){
-                    Terminal::Print("%d. Task %d (Profiler), used cpu time: %ld", 0, j, j, Scheduler::Tasks[i].ID, Scheduler::Tasks[i].CpuTime);
-                    
+                    Terminal::Print("%d. Task %d (Profiler), used cpu time: %ld : %d%%", 0, j, j, ta->ID, ta->CpuTime, (int)((float)ta->CpuTime/Time::GetUptime()*100));
                 } else {
-                    Terminal::Print("%d. Task %d, used cpu time: %ld", 0, j, j, Scheduler::Tasks[i].ID, Scheduler::Tasks[i].CpuTime);
+                    Terminal::Print("%d. Task %d, used cpu time: %ld : %d%%", 0, j, j, ta->ID, ta->CpuTime, (int)((float)ta->CpuTime/Time::GetUptime()*100));
                 }
                 j++;
             }
         }
+
+        uint64_t idleTime = Scheduler::GetIdleTime();
+
+        Terminal::Print("Idle time: %ld : %d%%", 0, j, idleTime, (int)((float)idleTime/Time::GetUptime()*100));
+        //Terminal::Print("Idle time: %ld : %d%%", 0, j+1, idleTime, (int)((float)idleTime/Time::GetUptime()*100));
+        Terminal::Print("Total uptime: %ld", 0, j+1, Time::GetUptime());
 
         Task::Wait(100);
     }

@@ -4,7 +4,7 @@ namespace Time{
     uint64_t count;
 
     uint64_t GetUptime(){
-        return count / TIMER_FREQUENCY;
+        return count;
     }
 
     void HandleTimerInterrupt(cpu_state* state){

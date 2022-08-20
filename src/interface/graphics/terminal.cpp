@@ -169,6 +169,12 @@ namespace Terminal {
                         str += 2;
                         break;
                     }
+
+                    case '%' : {
+                        DrawString("%", -1, column, row, textColor, bgColor);
+                        column++;
+                        str++;
+                    }
                 }
 
                 str++;

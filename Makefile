@@ -1,6 +1,6 @@
 SRCDIR := src
 BUILDDIR := build
-CFLAGS = -g -c -mcmodel=large -ffreestanding -mno-red-zone
+CFLAGS = -g -c -mcmodel=large -ffreestanding -mno-red-zone -fno-rtti -fno-exceptions
 
 x86_64_asm_source_files := $(shell find $(SRCDIR) -name *.asm)
 x86_64_asm_object_files := $(patsubst $(SRCDIR)/%.asm, $(BUILDDIR)/x86_64/%.o, $(x86_64_asm_source_files))
