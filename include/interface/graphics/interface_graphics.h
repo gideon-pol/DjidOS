@@ -125,24 +125,25 @@ namespace UI{
         typedef struct {
             uint32_t magic;
             uint32_t version;
-            uint32_t headersize;
+            uint32_t header_size;
             uint32_t flags;
-            uint32_t glyphCount;
-            uint32_t charSize;
+            uint32_t glyph_count;
+            uint32_t char_size;
             uint32_t height;
             uint32_t width;
+            uint32_t bytes_per_line;
         } PSF_Font;
 
         extern Frame CurrentFrame;
         extern PSF_Font* Font;
-        #define PIXEL_SIZE 4
+
         const uintptr_t FRAMEBUFFER = 0xFFFFFFD000000000;
 
         void Setup(uint16_t width, uint16_t height, uintptr_t framebuffer);
         void DrawBox(int x, int y, uint16_t sizeX, uint16_t sizeY, Color innerColor = Color::White, int outlineSize = 0, Color outlineColor = Color::White);    
         void DrawPixel(int x, int y, Color color = Color::White);
-        void DrawString(char* s, uint16_t column, uint16_t row, Color textColor = Color::White, Color bgColor = Color::Transparent);
-        void DrawString(char* s, int len, uint16_t column, uint16_t row, Color textColor = Color::White, Color bgColor = Color::Transparent, bool debug = false);
+        void DrawString(char* s, int len, int column, int row, Color textColor = Color::White, Color bgColor = Color::Transparent);
+        void DrawBitmap(Color* bitmap, int x, int y, uint32_t width, uint32_t height);
         void DrawBSOD(char* s);
         bool IsInitialized();
     }

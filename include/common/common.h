@@ -22,7 +22,7 @@ template<class T> T min(T a, T b){
     return (a < b) ? a : b;
 }
 
-inline void* operator new(size_t s) throw() { return nullptr; }
-inline void operator delete(void* p, unsigned long s) throw() {}
+//inline void* operator new(size_t s) throw() { return nullptr; }
+//inline void operator delete(void* p, unsigned long s) throw() {}
 
 #endif

@@ -4,6 +4,7 @@
 #include <common/common.h>
 #include <kernel/io.h>
 #include <kernel/interrupt.h>
+#include <kernel/scheduling/scheduler.h>
 
 #define PIT_FREQUENCY 1193182
 #define PIT_COMMAND_PORT 0x43
@@ -11,9 +12,10 @@
 
 #define TIMER_FREQUENCY 100
 
-namespace Timer{
+namespace Time{
     void Setup();
     uint64_t GetUptime();
+    void HandleTimerInterrupt(cpu_state* state);
 }
 
 #endif

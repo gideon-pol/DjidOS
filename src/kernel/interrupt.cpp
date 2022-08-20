@@ -34,7 +34,7 @@ extern "C" void Handler0x1C(void);
 extern "C" void Handler0x1D(void);
 extern "C" void Handler0x1E(void);
 extern "C" void Handler0x1F(void);
-extern "C" void Handler0x20(void);
+extern "C" void PitHandler(void);
 extern "C" void Handler0x21(void);
 extern "C" void Handler0x22(void);
 extern "C" void Handler0x23(void);
@@ -133,7 +133,7 @@ namespace InterruptManager{
         SetInterruptEntry(0xE, InterruptTableEntry(&PageFaultHandler), &UnhandledInterrupt);
         SetInterruptEntry(0xF, InterruptTableEntry(&Handler0xF), &UnhandledInterrupt);
 
-        SetInterruptEntry(0x20, InterruptTableEntry(&Handler0x20), &UnhandledInterrupt);
+        SetInterruptEntry(0x20, InterruptTableEntry(&PitHandler), &UnhandledInterrupt);
         SetInterruptEntry(0x21, InterruptTableEntry(&Handler0x21), &UnhandledInterrupt);
         SetInterruptEntry(0x22, InterruptTableEntry(&Handler0x22), &UnhandledInterrupt);
         SetInterruptEntry(0x23, InterruptTableEntry(&Handler0x23), &UnhandledInterrupt);
@@ -178,7 +178,7 @@ namespace InterruptManager{
         IO::Out(PIC1_DATA_PORT, a1);
         IO::Out(PIC2_DATA_PORT, a2);
         
-        IO::Out(PIC1_DATA_PORT, 0b11111001);
+        IO::Out(PIC1_DATA_PORT, 0b11111000);
         IO::Out(PIC2_DATA_PORT, 0b11101111);
 
         asm("sti");
@@ -194,9 +194,8 @@ namespace InterruptManager{
         handlers[irq].handler = handler;
     }
 
-    void HandleInterrupt(int_frame* frame){
+    cpu_state* HandleInterrupt(cpu_state* frame){
         if((void*)handlers[frame->int_number].handler == (void*)&UnhandledInterrupt){
-            //BSOD("unhandled interrupt");
             Terminal::Println("%crUnhandled interrupt: irq: %d\n", frame->int_number);
             asm("hlt");
         }
@@ -209,5 +208,7 @@ namespace InterruptManager{
                 IO::Out(PIC2_COMMAND_PORT, 0x20);
             }
         }
+
+        return frame;
     }
 }

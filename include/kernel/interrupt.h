@@ -1,13 +1,9 @@
 #ifndef IDT_H
 #define IDT_H
 
-//#include <stdio>
-//#include <cstring>
-
 #include <common/common.h>
 #include <interface.h>
 #include <kernel/io.h>
-#include <kernel/memory.h>
 
 #define DISABLE_INTERRUPTS asm("cli")
 
@@ -27,10 +23,10 @@
 using namespace UI::Old;
 
 typedef struct {
-    uint64_t r15, r14, r13, r12, r11, r10, r9, r8, rdi, rsi, rbp, rdx, rcx, rbx, rax;
+    uint64_t r11, r10, r9, r8, rdi, rsi, rbp, rdx, rcx, rax;
     uint32_t int_number, err;
     uint64_t retip, cs, rflags, retrsp, ss;
-} int_frame __attribute__((packed));
+} cpu_state __attribute__((packed));
 
 class InterruptTableEntry{
 public:
@@ -59,7 +55,7 @@ namespace InterruptManager{
     void RemapPIC();
     void SetInterruptEntry(uint8_t irq, InterruptTableEntry entry, void (*handler)());
     void SetHandler(uint8_t irq, void (*handler)());
-    void HandleInterrupt(uint8_t irq, uint8_t error);
+    cpu_state* HandleInterrupt(cpu_state* state);
 }
 
 #endif

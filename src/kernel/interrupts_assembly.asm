@@ -1,4 +1,4 @@
-extern _ZN16InterruptManager15HandleInterruptEP9int_frame
+extern _ZN16InterruptManager15HandleInterruptEP9cpu_state
 
 section .text
 
@@ -23,7 +23,6 @@ Handler%+%1:
 
 %macro PUSHALL 0
     push rax
-    push rbx
     push rcx
     push rdx
     push rbp
@@ -33,17 +32,9 @@ Handler%+%1:
     push r9
     push r10
     push r11
-    push r12
-    push r13
-    push r14
-    push r15
 %endmacro
 
 %macro POPALL 0
-    pop r15
-    pop r14
-    pop r13
-    pop r12
     pop r11
     pop r10
     pop r9
@@ -53,7 +44,6 @@ Handler%+%1:
     pop rbp
     pop rdx
     pop rcx
-    pop rbx
     pop rax
 %endmacro
 
@@ -84,7 +74,7 @@ ISR_NOERR 0x1C
 ISR_NOERR 0x1D
 ISR_ERR 0x1E
 
-ISR_NOERR 0x20
+extern _ZN4Time20HandleTimerInterruptEP9cpu_state
 ISR_NOERR 0x21
 ISR_NOERR 0x22
 ISR_NOERR 0x23
@@ -98,17 +88,36 @@ ISR_NOERR 0x2A
 ISR_NOERR 0x2B
 ISR_NOERR 0x2C
 
+global PitHandler
+PitHandler:
+    cli
+    cld
+    sub rsp, 8
+
+    PUSHALL
+
+    mov rdi, rsp
+    and rsp, -16
+
+    call _ZN4Time20HandleTimerInterruptEP9cpu_state
+
+    mov rdi, rax
+    jmp load_cpu_state
+
 isr_wrapper:
     cld
     PUSHALL
 
     mov rdi, rsp
-    mov r12, rsp
     and rsp, -16
 
-    call _ZN16InterruptManager15HandleInterruptEP9int_frame
+    call _ZN16InterruptManager15HandleInterruptEP9cpu_state
 
-    mov rsp, r12
+    mov rdi, rax
+
+global load_cpu_state
+load_cpu_state:
+    mov rsp, rdi
     POPALL
     add rsp, 8
 

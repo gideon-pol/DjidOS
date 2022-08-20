@@ -2,7 +2,13 @@
 #define VMM_H
 
 #include <common/common.h>
-#include <kernel/memory.h>
+
+#define P4INDEX(vaddr) ( (uint64_t)vaddr >> 39 & 511 )
+#define P3INDEX(vaddr) ( (uint64_t)vaddr >> 30 & 511 )
+#define P2INDEX(vaddr) ( (uint64_t)vaddr >> 21 & 511 )
+#define P1INDEX(vaddr) ( (uint64_t)vaddr & 0x1FFFFF )
+
+#define KERNEL_OFFSET 0xFFFFFF8000000000
 
 #define PAGE_PRESENT ( 0b1 )
 #define PAGE_RW ( 0b10 )

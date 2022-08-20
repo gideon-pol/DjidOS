@@ -1,14 +1,16 @@
-#include <kernel/scheduling/timer.h>
+#include <kernel/scheduling/time.h>
 
-namespace Timer{
+namespace Time{
     uint64_t count;
 
     uint64_t GetUptime(){
         return count / TIMER_FREQUENCY;
     }
 
-    void timerCallback(){
+    void HandleTimerInterrupt(cpu_state* state){
         count++;
+        IO::Out(PIC1_COMMAND_PORT, 0x20);
+        Scheduler::ScheduleNext(state);
     }
 
     void Setup(){
@@ -17,7 +19,5 @@ namespace Timer{
         IO::Out(PIT_COMMAND_PORT, 0x36);
         IO::Out(0x40, div & 0xFF);
         IO::Out(0x40, (div & 0xFF00) >> 8);
-
-        InterruptManager::SetHandler(PIT_IRQ, &timerCallback);
     }
 }

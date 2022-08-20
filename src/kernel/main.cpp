@@ -3,7 +3,8 @@
 #include <kernel/io.h>
 #include <kernel/multiboot2.h>
 #include <kernel/memory.h>
-#include <kernel/scheduling/timer.h>
+#include <kernel/scheduling/time.h>
+#include <kernel/scheduling/scheduler.h>
 #include <drivers/keyboard.h>
 #include <drivers/mouse.h>
 
@@ -24,8 +25,6 @@ struct KernelInfo {
 
 void enableFPU();
 void kernel_main(KernelInfo);
-
-int testI = 0;
 
 extern "C"
 void prekernel(uintptr_t multiboot_info_addr){
@@ -76,8 +75,60 @@ void prekernel(uintptr_t multiboot_info_addr){
     kernel_main(info);
 }
 
+void Task1(){
+    int i = 0;
+    while(true){
+        DrawBox(0, 0, CurrentFrame.Width, CurrentFrame.Height, Color::White);
+        Task::Wait(1000);
+        DrawBox(0, 0, CurrentFrame.Width, CurrentFrame.Height, Color::Black);
+        Task::Wait(1000);
+    }
+}
+
+void Task2(){
+    int width = 55;
+    int height = 9;
+    int xOffset = (CurrentFrame.GetColumns() - width) / 2;
+    int yOffset = (CurrentFrame.GetRows() - height * 1.5) / 2;
+
+    int h = 0;
+    while(true){
+        UI::Graphics::DrawString(" _____                __          _____   _____", -1, xOffset, yOffset+0, Color::FromHSV(h, 1, 1));
+        UI::Graphics::DrawString("/\\  __`\\   __  __    /\\ \\        /\\  __`\\/\\  __`\\", -1, xOffset, yOffset+1, Color::FromHSV(h+45, 1, 1));
+        UI::Graphics::DrawString("\\ \\ \\/\\ \\ /\\_\\/\\_\\   \\_\\ \\    ___\\ \\ \\/\\ \\ \\ \\L\\_\\", -1, xOffset, yOffset+2, Color::FromHSV(h+90, 1, 1));
+        UI::Graphics::DrawString(" \\ \\ \\ \\ \\\\/\\ \\/\\ \\  /'_` \\  / __`\\ \\ \\ \\ \\ \\____ \\", -1, xOffset, yOffset+3, Color::FromHSV(h+135, 1, 1));
+        UI::Graphics::DrawString("  \\ \\ \\_\\ \\\\ \\ \\ \\ \\/\\ \\L\\ \\/\\ \\L\\ \\ \\ \\_\\ \\/\\ \\L\\ \\", -1, xOffset, yOffset+4, Color::FromHSV(h+180, 1, 1));
+        UI::Graphics::DrawString("   \\ \\____/_\\ \\ \\ \\_\\ \\___,_\\ \\____/\\ \\_____\\ \\_____\\", -1, xOffset, yOffset+5, Color::FromHSV(h+225, 1, 1));
+        UI::Graphics::DrawString("    \\/___//\\ \\_\\ \\/_/\\/__,_ /\\/___/  \\/_____/\\/_____/", -1, xOffset, yOffset+6, Color::FromHSV(h+270, 1, 1));
+        UI::Graphics::DrawString("          \\ \\____/", -1, xOffset, yOffset+7, Color::FromHSV(h+315, 1, 1));
+        UI::Graphics::DrawString("           \\/___/", -1, xOffset, yOffset+8, Color::FromHSV(h, 1, 1));
+
+        h = ++h % 360;
+    }
+}
+
+void Profiler(){
+    Task* t = Scheduler::GetCurrentTask();
+
+    while(true){
+        int j = 0;
+        for(int i = 0; i < MAX_TASK_COUNT; i++){
+            if(Scheduler::Tasks[i].IsAlive){
+                if(t == &Scheduler::Tasks[i]){
+                    Terminal::Print("%d. Task %d (Profiler), used cpu time: %ld", 0, j, j, Scheduler::Tasks[i].ID, Scheduler::Tasks[i].CpuTime);
+                    
+                } else {
+                    Terminal::Print("%d. Task %d, used cpu time: %ld", 0, j, j, Scheduler::Tasks[i].ID, Scheduler::Tasks[i].CpuTime);
+                }
+                j++;
+            }
+        }
+
+        Task::Wait(100);
+    }
+}
+
 void kernel_main(KernelInfo info){
-    enableFPU();
     InterruptManager::Initialize();
     
     UI::Graphics::Setup(info.frame_width, info.frame_height, info.framebuffer);    
@@ -85,49 +136,22 @@ void kernel_main(KernelInfo info){
 
     keyboardDriver.Initialize();
     mouseDriver.Initialize();
-    Timer::Setup();
+    Time::Setup();
 
+    enableFPU();
+
+    Scheduler::Initialize();
+
+    Task task1 = Task((void*)&Task1);
+    Task task2 = Task((void*)&Task2);
+    Task profiler = Task((void*)&Profiler);
+
+    Scheduler::StartTask(task1);
+    Scheduler::StartTask(task2);
     InterruptManager::RemapPIC();
 
-    // Landing screen
-    {
-        DrawBox(0, 0, CurrentFrame.Width, CurrentFrame.Height - Font->height, Color::White);
-        int width = 55;
-        int height = 9;
-        int xOffset = (CurrentFrame.GetColumns() - width) / 2;
-        int yOffset = (CurrentFrame.GetRows() - height * 1.5) / 2;
-        
-        UI::Graphics::DrawString(" _____                __          _____   _____", -1, xOffset, yOffset+0, Color::Black);
-        UI::Graphics::DrawString("/\\  __`\\   __  __    /\\ \\        /\\  __`\\/\\  __`\\", -1, xOffset, yOffset+1, Color::Black);
-        UI::Graphics::DrawString("\\ \\ \\/\\ \\ /\\_\\/\\_\\   \\_\\ \\    ___\\ \\ \\/\\ \\ \\ \\L\\_\\", -1, xOffset, yOffset+2, Color::Black);
-        UI::Graphics::DrawString(" \\ \\ \\ \\ \\\\/\\ \\/\\ \\  /'_` \\  / __`\\ \\ \\ \\ \\ \\____ \\", -1, xOffset, yOffset+3, Color::Black);
-        UI::Graphics::DrawString("  \\ \\ \\_\\ \\\\ \\ \\ \\ \\/\\ \\L\\ \\/\\ \\L\\ \\ \\ \\_\\ \\/\\ \\L\\ \\", -1, xOffset, yOffset+4, Color::Black);
-        UI::Graphics::DrawString("   \\ \\____/_\\ \\ \\ \\_\\ \\___,_\\ \\____/\\ \\_____\\ \\_____\\", -1, xOffset, yOffset+5, Color::Black);
-        UI::Graphics::DrawString("    \\/___//\\ \\_\\ \\/_/\\/__,_ /\\/___/  \\/_____/\\/_____/", -1, xOffset, yOffset+6, Color::Black);
-        UI::Graphics::DrawString("          \\ \\____/", -1, xOffset, yOffset+7, Color::Black);
-        UI::Graphics::DrawString("           \\/___/", -1, xOffset, yOffset+8, Color::Black);
-        int rows = CurrentFrame.GetRows();
-        UI::Graphics::DrawString("DjidOS - A mediocre OS", -1, 0, rows - 2, Color::Black);
-
-        
-        //THIS DRAWS A FUNNY RAINBOW LANDING SCREEN
-        int h = 0;
-        while(true){
-            UI::Graphics::DrawString(" _____                __          _____   _____", -1, xOffset, yOffset+0, Color::FromHSV(h, 1, 1));
-            UI::Graphics::DrawString("/\\  __`\\   __  __    /\\ \\        /\\  __`\\/\\  __`\\", -1, xOffset, yOffset+1, Color::FromHSV(h+45, 1, 1));
-            UI::Graphics::DrawString("\\ \\ \\/\\ \\ /\\_\\/\\_\\   \\_\\ \\    ___\\ \\ \\/\\ \\ \\ \\L\\_\\", -1, xOffset, yOffset+2, Color::FromHSV(h+90, 1, 1));
-            UI::Graphics::DrawString(" \\ \\ \\ \\ \\\\/\\ \\/\\ \\  /'_` \\  / __`\\ \\ \\ \\ \\ \\____ \\", -1, xOffset, yOffset+3, Color::FromHSV(h+135, 1, 1));
-            UI::Graphics::DrawString("  \\ \\ \\_\\ \\\\ \\ \\ \\ \\/\\ \\L\\ \\/\\ \\L\\ \\ \\ \\_\\ \\/\\ \\L\\ \\", -1, xOffset, yOffset+4, Color::FromHSV(h+180, 1, 1));
-            UI::Graphics::DrawString("   \\ \\____/_\\ \\ \\ \\_\\ \\___,_\\ \\____/\\ \\_____\\ \\_____\\", -1, xOffset, yOffset+5, Color::FromHSV(h+225, 1, 1));
-            UI::Graphics::DrawString("    \\/___//\\ \\_\\ \\/_/\\/__,_ /\\/___/  \\/_____/\\/_____/", -1, xOffset, yOffset+6, Color::FromHSV(h+270, 1, 1));
-            UI::Graphics::DrawString("          \\ \\____/", -1, xOffset, yOffset+7, Color::FromHSV(h+315, 1, 1));
-            UI::Graphics::DrawString("           \\/___/", -1, xOffset, yOffset+8, Color::FromHSV(h, 1, 1));
-
-            h = ++h % 360;
-        }
-    }
-
-    Terminal::Println("It's morbin' time");
+    Scheduler::StartTask(profiler);
+    asm("hlt");
 
 /*
     void* testBuffer[10000];

@@ -22,7 +22,7 @@ void MouseDriver::Initialize(){
     InterruptManager::SetHandler(0x2C, (void (*)())&MouseDriver::HandleInterrupt);
 } 
 
-void MouseDriver::HandleInterrupt(int_frame* frame){
+void MouseDriver::HandleInterrupt(){
     uint8_t status = IO::In(0x64);
     uint8_t buffer[3];
     uint8_t packetNumber = 0;

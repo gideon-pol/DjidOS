@@ -64,6 +64,7 @@ namespace UI{
             Font = (PSF_Font*)&_binary_src_main_psf_start;
 
             if(Font->magic != 0x864AB572) crash();
+            Font->bytes_per_line = (Font->width + 7) / 8;
             initialized = true;
         }
 
@@ -85,17 +86,12 @@ namespace UI{
         }
 
         void DrawPixel(int x, int y, Color color){
-            *((uint32_t*)FRAMEBUFFER + x + y * Font->width) = color.ToInt();
+            *((uint32_t*)FRAMEBUFFER + x + y * CurrentFrame.Width) = color.ToInt();
         }
 
-        void DrawString(char* s, uint16_t column, uint16_t row, Color textColor, Color bgColor){
-            DrawString(s, -1, row, column, textColor, bgColor);
-        }
+        void DrawString(char* s, int len, int column, int row, Color textColor, Color bgColor){
+            uint8_t* fontTable = (uint8_t*)Font + Font->header_size;
 
-        void DrawString(char* s, int len, uint16_t column, uint16_t row, Color textColor, Color bgColor, bool debug){
-            uint8_t* fontTable = (uint8_t*)Font + Font->headersize;
-
-            uint16_t bytesPerLine = (Font->width + 7) / 8;
             uint16_t xOffset = column * Font->width;
             uint16_t yOffset = row * Font->height;
 
@@ -104,10 +100,8 @@ namespace UI{
             uint32_t textColorInt = textColor.ToInt();
             uint32_t bgColorInt = bgColor.ToInt();
 
-            uint8_t* check;
-
             for(int i = 0; i < strLen; i++){
-                uint8_t* glyph = (uint8_t*)(fontTable + s[i] * Font->charSize);
+                uint8_t* glyph = (uint8_t*)(fontTable + s[i] * Font->char_size);
 
                 for(int y = 0; y < Font->height; y++){
                     int row = (y + yOffset) * CurrentFrame.Width;
@@ -120,10 +114,19 @@ namespace UI{
                         }
                     }
 
-                    glyph += bytesPerLine;
+                    glyph += Font->bytes_per_line;
                 }
 
                 xOffset += Font->width + 1;
+            }
+        }
+
+        void DrawBitmap(Color* bitmap, int x, int y, uint32_t width, uint32_t height){
+            for(int yOffset = 0; yOffset < height; yOffset++){
+                int row = (y + yOffset) * CurrentFrame.Width;
+                for(int xOffset = 0; xOffset < width; xOffset++){
+                    *((uint32_t*)FRAMEBUFFER + (x + xOffset) + row) = bitmap[xOffset + yOffset * width].ToInt();
+                }
             }
         }
 

@@ -8,7 +8,7 @@ namespace Terminal {
     namespace {
         uint16_t totalColumns, totalRows;
         Color textColor = Color::White;
-        Color bgColor = Color::Transparent;
+        Color bgColor = Color::Black;
         char inputStr[500];
         int inputIndex = 0;
 
@@ -51,7 +51,6 @@ namespace Terminal {
     void Setup(){
         totalColumns = CurrentFrame.Width / Font->width - 1;
         totalRows = CurrentFrame.Height / Font->height - 1;
-        textColor = Color(255, 255, 255);
     }
 
     void AddInputCharacter(char c){
@@ -68,24 +67,29 @@ namespace Terminal {
         DrawString((char*)&inputStr, inputIndex, 0, row, Color::White, Color::Black);
     }
 
-    void Println(char* s...){
+    void Println(char* s, ...){
+        createNewLine();
         va_list args;
         va_start(args, s);
+        Print(s, 0, (totalRows-1), args);
+    }
 
-        int column = 0;
+    void Print(char* s, int column, int row, ...){
+        va_list args;
+        va_start(args, row);
+        Print(s, column, row, args);
+    }
+
+    void Print(char* s, int column, int row, va_list args){
         int strLen = strlen(s);
         char* str = s;
-
-        int printLine = totalRows - 1;
-        
-        createNewLine();
 
         while(str < s + strLen){
             if(*str == '%'){
                 switch(*(str+1)){
                     case 's' : {
                         char* strArg = va_arg(args, char*);
-                        DrawString(strArg, -1, column, printLine, textColor, bgColor);
+                        DrawString(strArg, -1, column, row, textColor, bgColor);
                         str++;
                         column += strlen(strArg);
                         break;
@@ -93,25 +97,25 @@ namespace Terminal {
                     case 'd' : {
                         int32_t strArg = va_arg(args, int32_t);
                         if(strArg < 0){ 
-                            DrawString("-", -1, column, printLine, textColor, bgColor);
-                            column = printNumber(column+1, (uint32_t)-strArg, printLine);
+                            DrawString("-", -1, column, row, textColor, bgColor);
+                            column = printNumber(column+1, (uint32_t)-strArg, row);
                         } else {
-                            column = printNumber(column, (uint32_t)strArg, printLine);
+                            column = printNumber(column, (uint32_t)strArg, row);
                         }
                         str++;
                         break;
                     }
                     case 'u' : {
                         uint32_t strArg = va_arg(args, uint32_t);
-                        column = printNumber(column, strArg, printLine);
+                        column = printNumber(column, strArg, row);
                         str++;
                         break;
                     }
                     case 'x' : {
                         uint32_t strArg = va_arg(args, uint32_t);
-                        DrawString("0x", -1, column, printLine, textColor, bgColor);
+                        DrawString("0x", -1, column, row, textColor, bgColor);
                         column += 2;
-                        column = printNumberHex(column, strArg, printLine);
+                        column = printNumberHex(column, strArg, row);
                         str++;
                         break;
                     }
@@ -122,31 +126,31 @@ namespace Terminal {
                             case 'd' : {
                                 int64_t strArg = va_arg(args, int64_t);
                                 if(strArg < 0){ 
-                                    DrawString("-", -1, column, printLine, textColor, bgColor);
-                                    column = printNumber(column+1, -strArg, printLine);
+                                    DrawString("-", -1, column, row, textColor, bgColor);
+                                    column = printNumber(column+1, -strArg, row);
                                 } else {
-                                    column = printNumber(column, strArg, printLine);
+                                    column = printNumber(column, strArg, row);
                                 }
                                 str++;
                                 break;
                             }
                             case 'u' : {
                                 uint64_t strArg = va_arg(args, uint64_t);
-                                column = printNumber(column, strArg, printLine);
+                                column = printNumber(column, strArg, row);
                                 str++;
                                 break;
                             }
                             case 'x' : {
                                 uint64_t strArg = va_arg(args, uint64_t);
-                                DrawString("0x", -1, column, printLine, textColor, bgColor);
+                                DrawString("0x", -1, column, row, textColor, bgColor);
                                 column += 2;
-                                column = printNumberHex(column, strArg, printLine);
+                                column = printNumberHex(column, strArg, row);
                                 str++;
                                 break;
                             }
                         }
 
-                        str += 2;
+                        str++;
 
                         break;
                     }
@@ -176,10 +180,9 @@ namespace Terminal {
                 continue;
             }
 
-            DrawString(str, 1, column, printLine, textColor, bgColor);
+            DrawString(str, 1, column, row, textColor, bgColor);
             str++;
             column++;
-
         }     
     }
 

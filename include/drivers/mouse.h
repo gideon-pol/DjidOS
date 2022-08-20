@@ -14,7 +14,7 @@ class MouseDriver// : public Driver
 public:
     MouseDriver(){};
     void Initialize();
-    void HandleInterrupt(int_frame* frame);
+    void HandleInterrupt();
 private:
 };
 

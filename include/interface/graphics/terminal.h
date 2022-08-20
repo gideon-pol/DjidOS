@@ -6,7 +6,9 @@
 
 namespace Terminal{
     void Setup();
-    void Println(char* s...);
+    void Println(char* s, ...);
+    void Print(char* s, int column, int row, ...);
+    void Print(char* s, int column, int row, va_list args);
     void Clear();
 
     void AddInputCharacter(char c);

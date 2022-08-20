@@ -8,8 +8,7 @@ define nub
 end
 
 b Handler0xE
-b src/kernel/interrupt.cpp:218
-b *0xffffff8000012050
+b Scheduler::ScheduleNext
 
 set pagination off
 set logging file gdb.log
