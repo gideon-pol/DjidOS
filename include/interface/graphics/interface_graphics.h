@@ -138,6 +138,9 @@ namespace UI{
         extern PSF_Font* Font;
 
         const uintptr_t FRAMEBUFFER = 0xFFFFFFD000000000;
+        const uintptr_t BACKBUFFER = 0xFFFFFFD000400000;
+
+        #define PIXEL_SIZE 4
 
         void Setup(uint16_t width, uint16_t height, uintptr_t framebuffer);
         void DrawBox(int x, int y, uint16_t sizeX, uint16_t sizeY, Color innerColor = Color::White, int outlineSize = 0, Color outlineColor = Color::White);    

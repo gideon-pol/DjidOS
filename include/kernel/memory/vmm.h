@@ -2,6 +2,8 @@
 #define VMM_H
 
 #include <common/common.h>
+#include <kernel/memory.h>
+#include <kernel/scheduling/locking.h>
 
 #define P4INDEX(vaddr) ( (uint64_t)vaddr >> 39 & 511 )
 #define P3INDEX(vaddr) ( (uint64_t)vaddr >> 30 & 511 )
@@ -15,7 +17,6 @@
 #define IDENTITY_MAP_KERNEL false
 
 namespace VMM {
-    extern uint64_t check;
     void SetupPaging(void* addr, size_t s);
     void MapPage(void* phaddr, void* vaddr);
     void UnmapPage(void* vaddr);

@@ -48,19 +48,21 @@ namespace UI{
             Color::White = Color(255, 255, 255);
             Color::Transparent = Color(0, 0, 0, 0);*/
 
-            uintptr_t mappedFramebuffer = ALIGN(FRAMEBUFFER, PAGE_SIZE);
-
             int frameBufferBytesToMap = width * height * 4;
             int frameBufferPagesMapped = 0;
 
             while(frameBufferBytesToMap > 0){
-                VMM::MapPage((void*)(framebuffer + frameBufferPagesMapped * PAGE_SIZE), (void*)(mappedFramebuffer + frameBufferPagesMapped * PAGE_SIZE));
+                VMM::MapPage((void*)framebuffer + frameBufferPagesMapped * PAGE_SIZE, (void*)FRAMEBUFFER + frameBufferPagesMapped * PAGE_SIZE);
                 PMM::LockPages(framebuffer + frameBufferPagesMapped * PAGE_SIZE);
+
+                void* backbufferPage = PMM::AllocatePage();
+                VMM::MapPage(backbufferPage, (void*)BACKBUFFER + frameBufferPagesMapped * PAGE_SIZE);
+
                 frameBufferBytesToMap -= PAGE_SIZE;
                 frameBufferPagesMapped++;
             }
 
-            CurrentFrame = Frame(width, height, mappedFramebuffer);
+            CurrentFrame = Frame(width, height, FRAMEBUFFER);
             Font = (PSF_Font*)&_binary_src_main_psf_start;
 
             if(Font->magic != 0x864AB572) crash();

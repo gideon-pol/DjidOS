@@ -9,6 +9,7 @@ end
 
 b Handler0xE
 b Scheduler::ScheduleNext
+b src/kernel/memory/pmm.cpp:30
 
 set pagination off
 set logging file gdb.log

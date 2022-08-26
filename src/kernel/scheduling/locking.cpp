@@ -7,5 +7,5 @@ void Spinlock::Acquire(){
 }
 
 void Spinlock::Unlock(){
-    obtained = false;
+    __sync_lock_release(&obtained);
 }

@@ -1,0 +1,61 @@
+
+Breakpoint 3, PMM::Initialize (area=area@entry=0x12ddc8) at src/kernel/memory/pmm.cpp:31
+31	        bitmap = Bitmap(bitmapBuffer, bitmapCount, bitmapSize);
+Bitmap::Bitmap (this=0xffffff800002db88, map=0xffffff80000349eb "", count=64, size=9) at src/common/bitmap.cpp:3
+3	Bitmap::Bitmap(uint8_t* map, uint64_t count, uint64_t size){
+4	    Map = map;
+5	    Count = count;
+6	    Size = size;
+
+Breakpoint 3, PMM::Initialize (area=area@entry=0x12ddc8) at src/kernel/memory/pmm.cpp:31
+31	        bitmap = Bitmap(bitmapBuffer, bitmapCount, bitmapSize);
+Bitmap::Bitmap (this=0xffffff800002db88, map=0xffffff80000349eb "", count=64, size=9) at src/common/bitmap.cpp:3
+3	Bitmap::Bitmap(uint8_t* map, uint64_t count, uint64_t size){
+4	    Map = map;
+5	    Count = count;
+6	    Size = size;
+
+Breakpoint 3, PMM::Initialize (area=area@entry=0x12ddc8) at src/kernel/memory/pmm.cpp:31
+31	        bitmap = Bitmap(bitmapBuffer, bitmapCount, bitmapSize);
+Bitmap::Bitmap (this=0xffffff800002db88, map=0xffffff80000349eb "", count=64, size=9) at src/common/bitmap.cpp:3
+3	Bitmap::Bitmap(uint8_t* map, uint64_t count, uint64_t size){
+4	    Map = map;
+5	    Count = count;
+6	    Size = size;
+
+Breakpoint 3, PMM::Initialize (area=area@entry=0x12ddc8) at src/kernel/memory/pmm.cpp:31
+31	        bitmap = Bitmap(bitmapBuffer, bitmapCount, bitmapSize);
+Attempt to use a type name as an expression
+non-unique member `Bitmap' requires type instantiation
+A syntax error in expression, near `Scheduler::ScheduleNext'.
+Dump of assembler code for function Bitmap::Bitmap(unsigned char*, unsigned long, unsigned long):
+   0xffffff8000010000 <+0>:	endbr64 
+   0xffffff8000010004 <+4>:	endbr64 
+   0xffffff8000010008 <+8>:	mov    %rsi,0x8(%rdi)
+   0xffffff800001000c <+12>:	mov    %rdx,(%rdi)
+   0xffffff800001000f <+15>:	mov    %rcx,0x10(%rdi)
+   0xffffff8000010013 <+19>:	retq   
+End of assembler dump.
+Bitmap::Bitmap (this=0xffffff800002db88, map=0xffffff80000349eb "", count=64, size=9) at src/common/bitmap.cpp:3
+3	Bitmap::Bitmap(uint8_t* map, uint64_t count, uint64_t size){
+4	    Map = map;
+5	    Count = count;
+6	    Size = size;
+0xffffff8000010013	6	    Size = size;
+0xffffff8000015634 in PMM::Initialize (area=area@entry=0x12ddc8) at src/kernel/memory/pmm.cpp:31
+31	        bitmap = Bitmap(bitmapBuffer, bitmapCount, bitmapSize);
+Quit
+Detaching from program: , process 1
+Remote communication error.  Target disconnected.: Broken pipe.
+
+Breakpoint 2, PMM::Initialize (area=0x11f478) at src/kernel/memory/pmm.cpp:30
+30	        uint8_t* bitmapBuffer = (uint8_t*)&_KernelEnd;
+$1 = 1000000
+Undefined command: "line".  Try "help".
+Function "0xffffff800001fff0" not defined.
+Dump of assembler code for function _ZN3PMM16pageAllocateLockE:
+   0xffffff800001fff0 <+0>:	add    %al,(%rax)
+End of assembler dump.
+Dump of assembler code for function _ZN3PMM16pageAllocateLockE:
+   0xffffff800001fff0 <+0>:	add    %al,(%rax)
+End of assembler dump.

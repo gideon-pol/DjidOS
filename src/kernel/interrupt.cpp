@@ -51,12 +51,7 @@ extern "C" void Handler0x2C(void);
 void BSOD(char* s){
     asm("cli");
 
-    if(GRAPHICS_MODE){
-        UI::Graphics::DrawBSOD(s);
-    } else {
-        UI::Old::Clear();
-        UI::Old::Print(s, 0, -1, VgaColor::White, VgaColor::Red);
-    }
+    UI::Graphics::DrawBSOD(s);
     
     for(int i = 0; i < 1000000000; i++){ i; }
     //IO::Out(0x64, 0xFE);
@@ -68,8 +63,6 @@ void DivByZeroHandler(){
 }
 
 void PageFaultHandler(){
-    asm("cli");
-
     //BSOD("Faulty page access");
 
     uintptr_t faultingAddress;
@@ -180,8 +173,6 @@ namespace InterruptManager{
         
         IO::Out(PIC1_DATA_PORT, 0b11111000);
         IO::Out(PIC2_DATA_PORT, 0b11101111);
-
-        asm("sti");
     }
 
     void SetInterruptEntry(uint8_t irq, InterruptTableEntry entry, void (*handler)()){

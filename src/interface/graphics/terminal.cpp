@@ -30,21 +30,14 @@ namespace Terminal {
         }
 
         void createNewLine(){
-            int h = CurrentFrame.Height - Font->height * 2;
-            for(int y = 0; y < h; y++){
-                int row = y * CurrentFrame.Width;
-                for(int x = 0; x < CurrentFrame.Width; x++){
-                    *((uint32_t*)FRAMEBUFFER + x + row) = *((uint32_t*)FRAMEBUFFER + x + (y + Font->height) * CurrentFrame.Width);
-                }
-            }
-            
-            uint32_t bgColorInt = bgColor.ToInt();
-            for(int y = h; y < CurrentFrame.Height - Font->height; y++){
-                int row = y * CurrentFrame.Width;
-                for(int x = 0; x < CurrentFrame.Width; x++){
-                    *((uint32_t*)FRAMEBUFFER + x + row) = bgColorInt;
-                }
-            }
+            memcpy(
+                    (void*)FRAMEBUFFER, 
+                    (void*)FRAMEBUFFER + Font->height * CurrentFrame.Width * PIXEL_SIZE, 
+                    (CurrentFrame.Width * CurrentFrame.Height - 2 * Font->height * CurrentFrame.Width) * PIXEL_SIZE);
+            memset(
+                    (void*)FRAMEBUFFER + (CurrentFrame.Height - Font->height * 2) * CurrentFrame.Width * PIXEL_SIZE,
+                    bgColor.ToInt(), 
+                    CurrentFrame.Width * Font->height * PIXEL_SIZE);
         }
     }
 
@@ -119,6 +112,31 @@ namespace Terminal {
                         str++;
                         break;
                     }
+                    case 'f' : {
+                        double strArg = va_arg(args, double);
+                        
+                        int intPart = (int)strArg;
+                        float fPart = strArg - intPart;
+                        column = printNumber(column, intPart, row);
+
+                        DrawString(".", 1, column, row, textColor, bgColor);
+                        column++;
+
+                        int decimalPrintPrecision = 2;
+
+                        if(*(str+2) == ':'){
+                            decimalPrintPrecision = *(str+3) - 48;
+                            str += 2;
+                        }
+
+                        for(int i = 0; i < decimalPrintPrecision; i++){
+                            fPart *= 10;
+                        }
+
+                        column = printNumber(column, (int)fPart, row);
+                        str++;
+                        break;
+                    }
 
                     case 'l' : {
                         switch (*(str+2))
@@ -151,7 +169,6 @@ namespace Terminal {
                         }
 
                         str++;
-
                         break;
                     }
 

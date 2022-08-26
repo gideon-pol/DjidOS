@@ -4,12 +4,6 @@
 extern uintptr_t _KernelStart;
 extern uintptr_t _KernelEnd;
 
-void memset(void* mem, uint8_t val, size_t s){
-    for(uint64_t i = 0; i < s; i++){
-        *(uint8_t*)mem = val;
-    }
-}
-
 namespace PMM{
     Bitmap bitmap;
     void* freeRegion = nullptr;
@@ -20,38 +14,38 @@ namespace PMM{
     }
 
     void Initialize(multiboot_memory_map_t* area){
-        freeRegion = (void*)area->addr;// + KERNEL_OFFSET;
+        freeRegion = (void*)area->addr;
         freeMemory = area->len;
 
         uint64_t bitmapCount = area->len / PAGE_SIZE;
-        if(area->len % PAGE_SIZE != 0) bitmapCount++;
         uint64_t bitmapSize = bitmapCount / 8 + 1;
-        
+
         uint8_t* bitmapBuffer = (uint8_t*)&_KernelEnd;
         bitmap = Bitmap(bitmapBuffer, bitmapCount, bitmapSize);
-        for(int i = 0; i < bitmapSize; i++){
-            *(bitmapBuffer + i) = 0;
-        }
+
+        memset(bitmapBuffer, 0, bitmapSize);
 
         // Lock both the kernel region and boot sector
-        uint64_t pagesToLock = ((uint64_t)&_KernelEnd - KERNEL_OFFSET)/PAGE_SIZE + 1;
-
+        size_t pagesToLock = ALIGN((uint64_t)&_KernelEnd - KERNEL_OFFSET, PAGE_SIZE) / PAGE_SIZE;
         LockPages((uintptr_t)freeRegion, pagesToLock);
     }
 
+    Spinlock pageAllocaterLock;
     void* AllocatePage(){
+        pageAllocaterLock.Acquire();
         //Terminal::Println("Page allocation requested");
         for(int i = 0; i < bitmap.Count; i++){
             if(!bitmap[i]){
                 uintptr_t allocatedAddress = i * PAGE_SIZE;
                 LockPages(allocatedAddress);
+                pageAllocaterLock.Unlock();
+
                 return (void*)allocatedAddress;
             }
         }
 
         //Terminal::Println("%crPage allocation failed, out of memory%cw");
-        while(true);
-
+        pageAllocaterLock.Unlock();
         return (void*)-1;
     }
 
@@ -59,7 +53,7 @@ namespace PMM{
     void LockPages(uintptr_t phaddr, uint64_t count){
         for(int i = 0; i < count; i++){
             uint64_t index = phaddr / PAGE_SIZE + i;
-            if(bitmap[index]) return;
+            if(bitmap[index]) break;
             bitmap.Set(index, true);
             usedMemory += PAGE_SIZE; 
             freeMemory -= PAGE_SIZE;
@@ -69,7 +63,7 @@ namespace PMM{
     void FreePages(uintptr_t phaddr, uint64_t count){
         for(int i = 0; i < count; i++){
             uint64_t index = phaddr / PAGE_SIZE + i;
-            if(!bitmap[index]) return;
+            if(!bitmap[index]) break;
             bitmap.Set(index, false);
             freeMemory += PAGE_SIZE;
             usedMemory -= PAGE_SIZE;

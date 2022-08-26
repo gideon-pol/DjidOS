@@ -10,7 +10,7 @@ namespace Time{
     void HandleTimerInterrupt(cpu_state* state){
         count++;
         IO::Out(PIC1_COMMAND_PORT, 0x20);
-        Scheduler::ScheduleNext(state);
+        Scheduler::Schedule(state);
     }
 
     void Setup(){

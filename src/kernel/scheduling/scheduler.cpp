@@ -61,6 +61,8 @@ namespace Scheduler{
 
     Task* idle;
 
+    Spinlock taskStartLock;
+
     void idleTask(){
         idle->IsAlive = true;
         while(true){
@@ -73,21 +75,27 @@ namespace Scheduler{
     }
 
     Task* StartTask(Task t){
-        for(int i = 0; i < MAX_TASK_COUNT; i++){
+        taskStartLock.Acquire();
+
+        for(int i = taskCount; i < MAX_TASK_COUNT; i++){
             if(!Tasks[i].IsAlive){
                 Tasks[i] = t;
-                Tasks[i].IsAlive = true;
                 Tasks[i].ID = idCounter;
+                Tasks[i].IsAlive = true;
                 idCounter++;
                 taskCount++;
+                taskStartLock.Unlock();
+
+                Terminal::Println("Started task %ld", Tasks[i].ID);
                 return &Tasks[i];
             }
         }
 
+        taskStartLock.Unlock();
         return nullptr;
     }
 
-    void ScheduleNext(cpu_state* state){
+    void Schedule(cpu_state* state){
         if(currentTask != -1){
             Tasks[currentTask].State = state;
         } else if(idle->IsAlive){
@@ -101,25 +109,31 @@ namespace Scheduler{
         }
 
         bool nextTaskFound = false;
+        int nextTask = -1;
 
-        for(int i = 1; i <= MAX_TASK_COUNT; i++){
-            Task* t = &Tasks[(currentTask + i) % MAX_TASK_COUNT];
+        for(int i = 1; i <= taskCount; i++){
+            Task* t = &Tasks[(currentTask + i) % taskCount];
             if(t->IsAlive){
                 if(t->ShouldStop){
                     t->IsAlive = false;
-                    Tasks[(currentTask + i) % MAX_TASK_COUNT] = nullptr;
+                    Tasks[(currentTask + i) % taskCount] = Tasks[taskCount - 1];
+                    Tasks[taskCount - 1] = nullptr;
+                    taskCount--;
+                    Terminal::Println("Stopped task %ld", t->ID);
                     continue;
                 }
+
                 if(t->IsSleeping()){
                     t->SleepTicks--;
                 } else if(!nextTaskFound){
                     nextTaskFound = true;
-                    currentTask = (currentTask + i) % MAX_TASK_COUNT;
+                    nextTask = (currentTask + i) % taskCount;
                 }
             }
         }
 
         if(nextTaskFound){
+            currentTask = nextTask;
             Tasks[currentTask].CpuTime++;
             load_cpu_state(Tasks[currentTask].State);
         } else {

@@ -5,7 +5,8 @@
 #include <interface.h>
 #include <kernel/io.h>
 
-#define DISABLE_INTERRUPTS asm("cli")
+#define INT_OFF asm("cli")
+#define INT_ON asm("sti")
 
 #define IDT_InterruptGate 0b10001110
 
@@ -19,8 +20,6 @@
 #define ICW1_INIT 0x10
 #define ICW1_ICW4 0x01
 #define ICW4_8086 0x01
-
-using namespace UI::Old;
 
 typedef struct {
     uint64_t r11, r10, r9, r8, rdi, rsi, rbp, rdx, rcx, rax;

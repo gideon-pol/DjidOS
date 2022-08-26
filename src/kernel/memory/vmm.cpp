@@ -2,17 +2,9 @@
 #include <interface.h>
 
 namespace VMM{
-    namespace{
-        void memset(void* mem, uint8_t val, size_t s){
-            for(uint64_t i = 0; i < s; i++){
-                *(uint8_t*)mem = val;
-            }
-        }
-
-        void* freeRegion = nullptr;
-        uint64_t* pageTable = nullptr;
-        Bitmap bitmap;
-    }
+    void* freeRegion = nullptr;
+    uint64_t* pageTable = nullptr;
+    Bitmap bitmap;
 
     void* GetPhysAddr(void* vaddr){
         // If paging has not been set up properly simply retract the kernel's offset, otherwise translate through the page table
@@ -62,16 +54,16 @@ namespace VMM{
         asm volatile("mov %0, %%cr3" :: "r"(p4TableLow));
         pageTable = p4Table;
 
-        uintptr_t leftoverMemInPage = (uintptr_t)p2Table + PAGE_TABLE_SIZE;
-        size_t leftoverMem = s * PAGE_SIZE - (leftoverMemInPage - KERNEL_OFFSET);
+        uintptr_t freeMemAddr = (uintptr_t)p2Table + PAGE_TABLE_SIZE;
+        size_t leftoverMem = s * PAGE_SIZE - (freeMemAddr - KERNEL_OFFSET);
 
         uint64_t bitmapCount = leftoverMem / PAGE_TABLE_SIZE;
-        if(leftoverMemInPage % PAGE_TABLE_SIZE != 0) bitmapCount++;
         uint64_t bitmapSize = bitmapCount / 8 + 1;
 
-        bitmap = Bitmap((uint8_t*)leftoverMemInPage, bitmapCount, bitmapSize);
+        bitmap = Bitmap((uint8_t*)freeMemAddr, bitmapCount, bitmapSize);
 
-        memset((void*)leftoverMemInPage, 0, bitmapSize); 
+        memset((void*)freeMemAddr, 0, bitmapSize);
+
         for(int i = 0; i < bitmapSize/PAGE_TABLE_SIZE + 1; i++){
             bitmap.Set(i, true);
         }
@@ -79,33 +71,45 @@ namespace VMM{
         KernelHeapEnd = (void*)KERNEL_HEAP_START;
     }
 
+    Spinlock pageTableAllocaterLock;
     void* AllocatePageTable(){
+        pageTableAllocaterLock.Acquire();
+
         for(int i = 0; i < bitmap.Count; i++){  
             if(!bitmap[i]){   
                 uintptr_t allocatedAddress = (uintptr_t)bitmap.Map + i * PAGE_TABLE_SIZE;
                 bitmap.Set(i, true);
 
                 memset((void*)allocatedAddress, 0, PAGE_TABLE_SIZE);
+
+                pageTableAllocaterLock.Unlock();
                 return (void*)allocatedAddress;
             }
         }
 
+        pageTableAllocaterLock.Unlock();
         return nullptr;
     }
 
     void* FreePageTable(void* vaddr){
+        pageTableAllocaterLock.Acquire();
+
         uint64_t index = ((uint64_t)vaddr - (uint64_t)bitmap.Map) / PAGE_TABLE_SIZE;
         bitmap.Set(index, false);
+
+        pageTableAllocaterLock.Unlock();
     }
 
+    Spinlock pageMapLock;
     void MapPage(void* phaddr, void* vaddr){
+        pageMapLock.Acquire();
+
         if(pageTable[P4INDEX(vaddr)] & PAGE_PRESENT){
             uint64_t* p3Table = (uint64_t*)((pageTable[P4INDEX(vaddr)] & ~0xFFF) + KERNEL_OFFSET);
             if(p3Table[P3INDEX(vaddr)] & PAGE_PRESENT){
                 uint64_t* p2Table = (uint64_t*)((p3Table[P3INDEX(vaddr)] & ~0xFFF) + KERNEL_OFFSET);
                 p2Table[P2INDEX(vaddr)] = (uint64_t)phaddr | 0b10000000 | PAGE_RW | PAGE_PRESENT;
             } else {
-                
                 uint64_t* newP2Table = (uint64_t*)AllocatePageTable();
                 p3Table[P3INDEX(vaddr)] = (uint64_t)GetPhysAddr(newP2Table) | PAGE_RW | PAGE_PRESENT;
                 newP2Table[P2INDEX(vaddr)] = (uint64_t)phaddr | 0b10000000 | PAGE_RW | PAGE_PRESENT;
@@ -119,9 +123,13 @@ namespace VMM{
         }
 
         asm volatile("mov %0, %%cr3" :: "r"(GetPhysAddr(pageTable)));
+
+        pageMapLock.Unlock();
     }
 
     void UnmapPage(void* vaddr){
+        pageMapLock.Acquire();
+
         if(pageTable[P4INDEX(vaddr)] & PAGE_PRESENT){
             uint64_t* p3Table = (uint64_t*)((pageTable[P4INDEX(vaddr)] & ~0xFFF) + KERNEL_OFFSET);
             if(p3Table[P3INDEX(vaddr)] & PAGE_PRESENT){
@@ -131,6 +139,7 @@ namespace VMM{
         }
 
         asm volatile("mov %0, %%cr3" :: "r"(GetPhysAddr(pageTable)));
+        pageMapLock.Unlock();
     }
 
     void* SBRK(int64_t s){
@@ -138,34 +147,22 @@ namespace VMM{
 
         if(s < 0){
             size_t pagesToMove = -s / PAGE_SIZE;
-            //Terminal::Println("Moving down by %ld bytes, %ld pages, total heap page count: %ld, %ld", -s, pagesToMove, ((uintptr_t)KernelHeapEnd - (uintptr_t)KERNEL_HEAP_START)/PAGE_SIZE, s % PAGE_SIZE);
-
             for(int i = 0; i < pagesToMove && KernelHeapEnd != KERNEL_HEAP_START; i++){
                 KernelHeapEnd = (uint8_t*)KernelHeapEnd - PAGE_SIZE;
                 uintptr_t phaddr = (uintptr_t)GetPhysAddr(KernelHeapEnd);
                 UnmapPage(KernelHeapEnd);
-                //Terminal::Println("Unmapped page");
-
                 PMM::FreePages(phaddr);
-                //Terminal::Println("Freed page");
             }
-
-            //Terminal::Println("Heap pages left: %ld", ((uintptr_t)KernelHeapEnd - (uintptr_t)KERNEL_HEAP_START)/PAGE_SIZE);
-            //Terminal::Println("Kernel start mapping: %lx", VMM::GetPhysAddr((void*)KERNEL_HEAP_START));
-
-            //Terminal::Println("Done moving down program heap");
         } else if(s > 0) {
             size_t pagesToMove = ALIGN(s, PAGE_SIZE) / PAGE_SIZE;
-
             for(int i = 0; i < pagesToMove; i++){
-                //Terminal::Println("Allocating new page");
                 void* page = PMM::AllocatePage();
+
                 if(page == (void*)-1){
                     return (void*)-1;
                 }
-                //Terminal::Println("VMM Allocated page: %lx", page);
-                MapPage(page, KernelHeapEnd);
 
+                MapPage(page, KernelHeapEnd);
                 KernelHeapEnd = (void*)((uintptr_t)KernelHeapEnd + PAGE_SIZE);
             }
         }

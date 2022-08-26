@@ -18,6 +18,8 @@ typedef struct {
 free_block* freeList = NULL;
 int freesSinceMerge = 0;
 
+Spinlock heapLock = Spinlock();
+
 #define ASSERT(x) { if(!(x)){ Terminal::Println(">>> Assertion \"%s\" failed in %s, line %d\n", #x, __PRETTY_FUNCTION__, __LINE__); while(true); } }
 #define ALIGN(num, bound) ((num + bound-1) & ~(bound-1))
 #define BATCH_SIZE PAGE_SIZE
@@ -83,6 +85,7 @@ void splitBlock(free_block* freeBlock, size_t s, free_block* prevBlock){
 }
 
 void *malloc(size_t size){
+    heapLock.Acquire();
     if(size == 0) size = 1;
     size = ALIGN(size, 8);
 
@@ -93,7 +96,10 @@ void *malloc(size_t size){
         if(prevBlock == NULL || !isConnectedToSbrk(prevBlock)){
             size_t batchSize = ALIGN(size + OVERHEAD, BATCH_SIZE);
             free_block* newBlock = (free_block*)VMM::SBRK(batchSize);
-            if((intptr_t)newBlock == -1) return nullptr;
+            if((intptr_t)newBlock == -1) {
+                heapLock.Unlock();
+                return nullptr;
+            }
             freeBlock = newBlock;
 
             if(prevBlock == NULL){
@@ -109,7 +115,10 @@ void *malloc(size_t size){
             size_t batchSize = ALIGN(size - prevBlock->size, BATCH_SIZE);
             
             //ASSERT((intptr_t)VMM::SBRK(batchSize) != -1);
-            if((intptr_t)VMM::SBRK(batchSize) == -1) return nullptr;
+            if((intptr_t)VMM::SBRK(batchSize) == -1){
+                heapLock.Unlock();
+                return nullptr;
+            }
             freeBlock = prevBlock;
             freeBlock->size += batchSize;
 
@@ -122,6 +131,7 @@ void *malloc(size_t size){
 
     ASSERT(VMM::SBRK(0) >= (uint8_t*)used + OVERHEAD + size);
     
+    heapLock.Unlock();
     return (void*)used + OVERHEAD;
 }
 
@@ -148,6 +158,7 @@ void merge(){
 
 void free(void* ptr){
     if(ptr == NULL) return;
+    heapLock.Acquire();
 
     ASSERT(ptr < VMM::SBRK(0));
 
@@ -191,6 +202,8 @@ void free(void* ptr){
 
         freesSinceMerge = 0;
     }
+
+    heapLock.Unlock();
 }
 
 void* realloc(void *ptr, size_t size){

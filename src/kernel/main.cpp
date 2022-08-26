@@ -73,12 +73,6 @@ void prekernel(uintptr_t multiboot_info_addr){
     kernel_main(info);
 }
 
-void UselessTask(){
-    while(true){
-        Task::Wait(1000);
-    }
-}
-
 void Task1(){
     char* text = "Wow this is running in a separate task";
     int strLen = strlen(text);
@@ -130,11 +124,10 @@ void Profiler(){
         for(int i = 0; i < MAX_TASK_COUNT; i++){
             Task* ta = &Scheduler::Tasks[i];
             if(ta->IsAlive){
-
                 if(t == &Scheduler::Tasks[i]){
-                    Terminal::Print("%d. Task %d (Profiler), used cpu time: %ld : %d%%", 0, j, j, ta->ID, ta->CpuTime, (int)((float)ta->CpuTime/Time::GetUptime()*100));
+                    Terminal::Print("%d. Task %d (Profiler), used cpu time: %ld : %f%%", 0, j, j, ta->ID, ta->CpuTime, (float)ta->CpuTime/Time::GetUptime()*100);
                 } else {
-                    Terminal::Print("%d. Task %d, used cpu time: %ld : %d%%", 0, j, j, ta->ID, ta->CpuTime, (int)((float)ta->CpuTime/Time::GetUptime()*100));
+                    Terminal::Print("%d. Task %d, used cpu time: %ld : %f%%", 0, j, j, ta->ID, ta->CpuTime, (float)ta->CpuTime/Time::GetUptime()*100 );
                 }
                 j++;
             }
@@ -142,11 +135,10 @@ void Profiler(){
 
         uint64_t idleTime = Scheduler::GetIdleTime();
 
-        Terminal::Print("Idle time: %ld : %d%%", 0, j, idleTime, (int)((float)idleTime/Time::GetUptime()*100));
-        //Terminal::Print("Idle time: %ld : %d%%", 0, j+1, idleTime, (int)((float)idleTime/Time::GetUptime()*100));
+        Terminal::Print("Idle time: %ld : %f%%", 0, j, idleTime, (float)idleTime/Time::GetUptime()*100);
         Terminal::Print("Total uptime: %ld", 0, j+1, Time::GetUptime());
 
-        Task::Wait(100);
+        Task::Wait(1000);
     }
 }
 
@@ -160,6 +152,8 @@ void kernel_main(KernelInfo info){
     mouseDriver.Initialize();
     Time::Setup();
 
+    InterruptManager::RemapPIC();
+
     enableFPU();
 
     Scheduler::Initialize();
@@ -170,9 +164,9 @@ void kernel_main(KernelInfo info){
 
     Scheduler::StartTask(task1);
     Scheduler::StartTask(task2);
-    InterruptManager::RemapPIC();
-
     Scheduler::StartTask(profiler);
+
+    INT_ON;
     asm("hlt");
 
 /*

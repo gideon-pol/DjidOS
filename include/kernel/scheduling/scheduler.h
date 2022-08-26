@@ -3,6 +3,7 @@
 
 #include <kernel/interrupt.h>
 #include <kernel/scheduling/time.h>
+#include <kernel/scheduling/locking.h>
 #include <kernel/memory.h>
 
 #define MAX_TASK_COUNT 64
@@ -22,6 +23,7 @@ public:
     uint64_t ID = -1;
 
     uint64_t CpuTime = 0;
+    uint64_t CpuSecond = 0;
     volatile uint64_t SleepTicks = 0;
 
     cpu_state* State;
@@ -41,7 +43,7 @@ namespace Scheduler{
 
     void Initialize();
     Task* StartTask(Task t);
-    void ScheduleNext(cpu_state* state);
+    void Schedule(cpu_state* state);
     Task* GetCurrentTask();
     uint64_t GetIdleTime();
 }
