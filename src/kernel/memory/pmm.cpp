@@ -1,5 +1,4 @@
 #include <kernel/memory/pmm.h>
-#include <interface.h>
 
 extern uintptr_t _KernelStart;
 extern uintptr_t _KernelEnd;

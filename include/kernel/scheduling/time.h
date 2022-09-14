@@ -10,12 +10,14 @@
 #define PIT_COMMAND_PORT 0x43
 #define PIT_IRQ 0x20
 
-#define TIMER_FREQUENCY 100
+#define TIMER_FREQUENCY 1000
+
+typedef struct cpu_state cpu_state_t;
 
 namespace Time{
     void Setup();
     uint64_t GetUptime();
-    void HandleTimerInterrupt(cpu_state* state);
+    void HandleTimerInterrupt(cpu_state_t* state);
 }
 
 #endif

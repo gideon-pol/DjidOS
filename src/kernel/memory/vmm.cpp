@@ -1,5 +1,4 @@
 #include <kernel/memory/vmm.h>
-#include <interface.h>
 
 namespace VMM{
     void* freeRegion = nullptr;

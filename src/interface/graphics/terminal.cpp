@@ -1,5 +1,6 @@
 #include <interface/graphics/terminal.h>
 
+using namespace UI;
 using namespace UI::Graphics;
 
 // Terminal currently uses a very naive method of rendering
@@ -56,7 +57,7 @@ namespace Terminal {
     void RemoveInputCharacter(){
         inputIndex = max(0, --inputIndex);
         int row = CurrentFrame.GetRows() - 1;
-        DrawBox(0, row * Font->height, CurrentFrame.Width, CurrentFrame.Height - row * Font->height, Color::Black);
+        DrawBox({0, (int)(row * Font->height)}, {CurrentFrame.Width, (int)(CurrentFrame.Height - row * Font->height)}, Color::Black);
         DrawString((char*)&inputStr, inputIndex, 0, row, Color::White, Color::Black);
     }
 
@@ -207,14 +208,5 @@ namespace Terminal {
             str++;
             column++;
         }     
-    }
-
-    void Clear(){
-        uint32_t bgColorInt = bgColor.ToInt();
-        for(int x = 0; x < CurrentFrame.Width; x++){
-            for(int y = 0; y < CurrentFrame.Height - Font->height; y++){
-                *((uint32_t*)FRAMEBUFFER + x + y * CurrentFrame.Width) = bgColorInt;
-            }
-        }
     }
 }

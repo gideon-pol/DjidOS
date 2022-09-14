@@ -68,7 +68,7 @@ void PageFaultHandler(){
     uintptr_t faultingAddress;
     asm("mov %0, %%cr2" : "=r"(faultingAddress));
     
-    DrawBox(0,0,100,100,Color::Red);
+    Graphics::DrawBox({0, 0}, {100, 100}, Color::Red);
 
     Terminal::Println("Faulting address: %lx", faultingAddress);
     asm("hlt");
@@ -185,9 +185,10 @@ namespace InterruptManager{
         handlers[irq].handler = handler;
     }
 
-    cpu_state* HandleInterrupt(cpu_state* frame){
+    void HandleInterrupt(int_frame_t* frame){
         if((void*)handlers[frame->int_number].handler == (void*)&UnhandledInterrupt){
-            Terminal::Println("%crUnhandled interrupt: irq: %d\n", frame->int_number);
+            Terminal::Println("%crUnhandled interrupt: irq: %d%cw", frame->int_number);
+            Terminal::Println("Retip: %lx", frame->retip);
             asm("hlt");
         }
 
@@ -199,7 +200,5 @@ namespace InterruptManager{
                 IO::Out(PIC2_COMMAND_PORT, 0x20);
             }
         }
-
-        return frame;
     }
 }

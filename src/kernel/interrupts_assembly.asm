@@ -1,4 +1,4 @@
-extern _ZN16InterruptManager15HandleInterruptEP9cpu_state
+extern _ZN16InterruptManager15HandleInterruptEP11int_frame_t
 
 section .text
 
@@ -21,7 +21,7 @@ Handler%+%1:
     jmp isr_wrapper
 %endmacro
 
-%macro PUSHALL 0
+%macro PUSH_INTFRAME 0
     push rax
     push rcx
     push rdx
@@ -34,7 +34,7 @@ Handler%+%1:
     push r11
 %endmacro
 
-%macro POPALL 0
+%macro POP_INTFRAME 0
     pop r11
     pop r10
     pop r9
@@ -45,6 +45,24 @@ Handler%+%1:
     pop rdx
     pop rcx
     pop rax
+%endmacro
+
+%macro PUSH_CPUSTATE 0
+    PUSH_INTFRAME
+    push r12
+    push r13
+    push r14
+    push r15
+    push rbx
+%endmacro
+
+%macro POP_CPUSTATE 0
+    pop rbx
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    POP_INTFRAME
 %endmacro
 
 ISR_NOERR 0x0
@@ -92,33 +110,44 @@ global PitHandler
 PitHandler:
     cli
     cld
-    sub rsp, 8
 
-    PUSHALL
+    PUSH_CPUSTATE
 
     mov rdi, rsp
+    mov r12, rsp
     and rsp, -16
 
     call _ZN4Time20HandleTimerInterruptEP9cpu_state
 
-    mov rdi, rax
+    mov rdi, r12
     jmp load_cpu_state
-
-isr_wrapper:
-    cld
-    PUSHALL
-
-    mov rdi, rsp
-    and rsp, -16
-
-    call _ZN16InterruptManager15HandleInterruptEP9cpu_state
-
-    mov rdi, rax
 
 global load_cpu_state
 load_cpu_state:
     mov rsp, rdi
-    POPALL
-    add rsp, 8
+    POP_CPUSTATE
 
+    iretq
+
+global save_cpu_state
+save_cpu_state:
+    sub rsp, 20
+    PUSH_CPUSTATE
+    mov rax, rsp
+    retq
+
+isr_wrapper:
+    cld
+    PUSH_INTFRAME
+
+    mov rdi, rsp
+    mov r12, rsp
+    and rsp, -16
+
+    call _ZN16InterruptManager15HandleInterruptEP11int_frame_t
+
+    mov rsp, r12
+    POP_INTFRAME
+    
+    add rsp, 8
     iretq

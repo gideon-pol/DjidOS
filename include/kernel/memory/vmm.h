@@ -4,6 +4,7 @@
 #include <common/common.h>
 #include <kernel/memory.h>
 #include <kernel/scheduling/locking.h>
+#include <interface/graphics/interface_graphics.h>
 
 #define P4INDEX(vaddr) ( (uint64_t)vaddr >> 39 & 511 )
 #define P3INDEX(vaddr) ( (uint64_t)vaddr >> 30 & 511 )

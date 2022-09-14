@@ -8,26 +8,7 @@ extern char _binary_src_main_psf_end;
 
 namespace UI{
     namespace Graphics{
-        namespace {
-            bool initialized = false;
-        }
-
-        bool Color::operator==(const Color& other){ return R == other.R && G == other.G && B == other.B && A == other.A; }
-        bool Color::operator!=(const Color& other){ return R != other.R || G != other.G || B != other.B || A != other.A; }
-
-        uint32_t Color::ToInt(){
-            return (R << 16) | (G << 8) | B;
-        }
-
-        /*
-        Color Color::Black = Color(0, 0, 0);
-        Color Color::Blue = Color(0, 0, 255);
-        Color Color::Green = Color(0, 255, 0);
-        Color Color::Cyan = Color(0, 255, 255);
-        Color Color::Red = Color(255, 0, 0);
-        Color Color::Orange = Color(255, 180, 0);
-        Color Color::White = Color(255, 255, 255);
-        Color Color::Transparent = Color(0, 0, 0, 0);*/
+        bool initialized = false;
 
         Frame CurrentFrame;
         PSF_Font* Font;
@@ -70,12 +51,17 @@ namespace UI{
             initialized = true;
         }
 
-        void DrawBox(int x, int y, uint16_t sizeX, uint16_t sizeY, Color innerColor, int outlineSize, Color outlineColor){
-            int startX = min(max(x, 0), (int)CurrentFrame.Width);
-            int startY = min(max(y, 0), (int)CurrentFrame.Height);
+        void Swap(){
+            memcpy((void*)FRAMEBUFFER, (void*)BACKBUFFER, CurrentFrame.Height * CurrentFrame.Width * PIXEL_SIZE);
+            //memset((void*)BACKBUFFER, 0, CurrentFrame.Height * CurrentFrame.Width * PIXEL_SIZE);
+        }
+
+        void DrawBox(vec2 pos, vec2 size, Color innerColor, int outlineSize, Color outlineColor){
+            int startX = min(max(pos.X, 0), (int)CurrentFrame.Width);
+            int startY = min(max(pos.Y, 0), (int)CurrentFrame.Height);
  
-            uint16_t endX = min(x + sizeX, (int)CurrentFrame.Width);
-            uint16_t endY = min(y + sizeY, (int)CurrentFrame.Height);
+            uint16_t endX = min(pos.X + size.X, (int)CurrentFrame.Width);
+            uint16_t endY = min(pos.Y + size.Y, (int)CurrentFrame.Height);
 
             uint32_t innerColorInt = innerColor.ToInt();
 
@@ -89,6 +75,35 @@ namespace UI{
 
         void DrawPixel(int x, int y, Color color){
             *((uint32_t*)FRAMEBUFFER + x + y * CurrentFrame.Width) = color.ToInt();
+        }
+
+        void DrawString(char* s, int len, vec2 pos, Color textColor, Color bgColor){
+            uint8_t* fontTable = (uint8_t*)Font + Font->header_size;
+
+            int strLen = (len == -1) ? strlen(s) : len;
+
+            uint32_t textColorInt = textColor.ToInt();
+            uint32_t bgColorInt = bgColor.ToInt();
+
+            for(int i = 0; i < strLen; i++){
+                uint8_t* glyph = (uint8_t*)(fontTable + s[i] * Font->char_size);
+
+                for(int y = 0; y < Font->height; y++){
+                    int row = (y + pos.Y) * CurrentFrame.Width;
+                    
+                    for(int x = 0; x < Font->width; x++){
+                        if(glyph[x/8] & (0b10000000 >> (x & 0b111))){
+                            *((uint32_t*)FRAMEBUFFER + row + x + pos.X) = textColorInt;
+                        } else if(bgColor.A != 0){
+                            *((uint32_t*)FRAMEBUFFER + row + x + pos.X) = bgColorInt;
+                        }
+                    }
+
+                    glyph += Font->bytes_per_line;
+                }
+
+                pos.X += Font->width + 1;
+            }
         }
 
         void DrawString(char* s, int len, int column, int row, Color textColor, Color bgColor){
@@ -133,7 +148,7 @@ namespace UI{
         }
 
         void DrawBSOD(char* s){
-            DrawBox(0, 0, CurrentFrame.Width, CurrentFrame.Height, Color(0, 120, 215));
+            DrawBox({0, 0}, {CurrentFrame.Width, CurrentFrame.Height}, Color(0, 120, 215));
             int yOffset = (CurrentFrame.GetRows() - 6) / 2;
 
             DrawString(":(", -1, 20, yOffset);

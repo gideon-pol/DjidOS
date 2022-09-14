@@ -5,6 +5,7 @@
 #include <common/bitmap.h>
 #include <kernel/memory.h>
 #include <kernel/multiboot2.h>
+#include <interface/graphics/interface_graphics.h>
 
 #define PAGE_SIZE 0x200000
 #define PAGE_TABLE_SIZE 4096

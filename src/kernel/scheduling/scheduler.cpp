@@ -13,16 +13,19 @@ void* Task::operator new(size_t size, void* func){
 }
 
 void Task::construct(void* func){
-    size_t threadStackSize = 1048576;
+    size_t taskStackSize = 1048576;
 
-    stack = malloc(threadStackSize);
-    State = (cpu_state*)((uintptr_t)stack + threadStackSize - sizeof(cpu_state));
+    IsAlive = false;
+    ShouldStop = false;
+    
+    stack = malloc(taskStackSize);
+    CpuState = (cpu_state*)((uintptr_t)stack + taskStackSize - sizeof(cpu_state));
 
-    State->retip = (uint64_t)func;
-    State->retrsp = (uint64_t)stack + threadStackSize;
-    State->rflags = 0b001000000010;
-    State->ss = 0x0;
-    State->cs = 0x8;
+    CpuState->retip = (uint64_t)func;
+    CpuState->retrsp = (uintptr_t)stack + taskStackSize;
+    CpuState->rflags = 0b001000000010;
+    CpuState->ss = 0;//(uintptr_t)stack;
+    CpuState->cs = 0x8;
 }
 
 void Task::Start(){
@@ -31,19 +34,18 @@ void Task::Start(){
 
 void Task::Stop(){
     ShouldStop = true;
+    State = TaskState::Stopping;
 }
 
 void Task::Sleep(int milliseconds){
-    SleepTicks = milliseconds / 10;
-    while(SleepTicks > 0);
-}
-
-bool Task::IsSleeping(){
-    return SleepTicks > 0;
+    SleepTicks = milliseconds;
+    State = TaskState::Sleeping;
 }
 
 void Task::Wait(int milliseconds){
-    Scheduler::GetCurrentTask()->Sleep(milliseconds);
+    Task* t = Scheduler::GetCurrentTask();
+    t->Sleep(milliseconds);
+    while(t->SleepTicks > 0);
 }
 
 void Task::Exit(){
@@ -78,10 +80,10 @@ namespace Scheduler{
         taskStartLock.Acquire();
 
         for(int i = taskCount; i < MAX_TASK_COUNT; i++){
-            if(!Tasks[i].IsAlive){
+            if(Tasks[i].State == TaskState::Stopped){
                 Tasks[i] = t;
                 Tasks[i].ID = idCounter;
-                Tasks[i].IsAlive = true;
+                Tasks[i].State = TaskState::Idle;
                 idCounter++;
                 taskCount++;
                 taskStartLock.Unlock();
@@ -97,15 +99,17 @@ namespace Scheduler{
 
     void Schedule(cpu_state* state){
         if(currentTask != -1){
-            Tasks[currentTask].State = state;
+            Tasks[currentTask].CpuState = state;
+            if(Tasks[currentTask].State == TaskState::Running)
+                Tasks[currentTask].State = TaskState::Idle;
         } else if(idle->IsAlive){
-            idle->State = state;
+            idle->CpuState = state;
         }
 
         if(taskCount == 0){
             currentTask = -1;
             idle->CpuTime++;
-            load_cpu_state(idle->State);
+            load_cpu_state(idle->CpuState);
         }
 
         bool nextTaskFound = false;
@@ -113,33 +117,42 @@ namespace Scheduler{
 
         for(int i = 1; i <= taskCount; i++){
             Task* t = &Tasks[(currentTask + i) % taskCount];
-            if(t->IsAlive){
-                if(t->ShouldStop){
-                    t->IsAlive = false;
+
+            switch(t->State){
+                case TaskState::Idle:{
+                    if(!nextTaskFound){
+                        nextTaskFound = true;
+                        nextTask = (currentTask + i) % taskCount;
+                    }
+                    break;
+                };
+                case TaskState::Sleeping:{
+                    t->SleepTicks--;
+                    if(t->SleepTicks == 0){
+                        t->State = TaskState::Idle;
+                    }
+                    break;
+                };
+                case TaskState::Stopping:{
                     Tasks[(currentTask + i) % taskCount] = Tasks[taskCount - 1];
                     Tasks[taskCount - 1] = nullptr;
+                    t->State = TaskState::Stopped;
                     taskCount--;
                     Terminal::Println("Stopped task %ld", t->ID);
-                    continue;
-                }
-
-                if(t->IsSleeping()){
-                    t->SleepTicks--;
-                } else if(!nextTaskFound){
-                    nextTaskFound = true;
-                    nextTask = (currentTask + i) % taskCount;
+                    break;
                 }
             }
         }
 
         if(nextTaskFound){
             currentTask = nextTask;
+            Tasks[currentTask].State = TaskState::Running;
             Tasks[currentTask].CpuTime++;
-            load_cpu_state(Tasks[currentTask].State);
+            load_cpu_state(Tasks[currentTask].CpuState);
         } else {
             currentTask = -1;
             idle->CpuTime++;
-            load_cpu_state(idle->State);
+            load_cpu_state(idle->CpuState);
         }
     }
 

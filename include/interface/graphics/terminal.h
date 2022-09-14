@@ -3,6 +3,7 @@
 
 #include <cstdarg>
 #include <kernel/memory.h>
+#include <interface/types.h>
 #include <interface/graphics/interface_graphics.h>
 
 namespace Terminal{

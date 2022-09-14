@@ -2,7 +2,6 @@
 #include <common/common.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <interface.h>
 
 typedef struct free_block free_block;
 

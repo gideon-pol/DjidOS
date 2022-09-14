@@ -8,6 +8,8 @@ namespace Time{
     }
 
     void HandleTimerInterrupt(cpu_state* state){
+        //Terminal::Println("Rax: %lx, Rbx: %lx, Retip: %lx", state->rax, state->rbx, state->retip);
+        //Terminal::Println("Retip: %lx", state->retip);
         count++;
         IO::Out(PIC1_COMMAND_PORT, 0x20);
         Scheduler::Schedule(state);

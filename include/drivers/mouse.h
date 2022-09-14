@@ -5,7 +5,7 @@
 #include <drivers/driver.h>
 #include <kernel/io.h>
 #include <kernel/interrupt.h>
-#include <interface.h>
+#include <interface/graphics/interface_graphics.h>
 
 enum MouseButton { Left, Right, Middle, Four, Five };
 

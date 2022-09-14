@@ -1,4 +1,3 @@
-#include <interface.h>
 #include <kernel/interrupt.h>
 #include <kernel/io.h>
 #include <kernel/multiboot2.h>
@@ -8,6 +7,7 @@
 #include <kernel/scheduling/locking.h>
 #include <drivers/keyboard.h>
 #include <drivers/mouse.h>
+#include <interface/interface.h>
 
 extern uintptr_t _KernelStart;
 /* IMPORTANT:
@@ -16,6 +16,8 @@ extern uintptr_t _KernelStart;
     overwritten after booting however.
 */
 extern uintptr_t _KernelEnd;
+
+using namespace Graphics;
 
 struct KernelInfo {
     multiboot_memory_map_t* largest_available_memory_section;
@@ -118,12 +120,12 @@ void Profiler(){
     Task* t = Scheduler::GetCurrentTask();
 
     while(true){
-        DrawBox(0, 0, 500, 300, Color::Black);
+        DrawBox({0, 0}, {500, 300}, Color::Black);
 
         int j = 0;
         for(int i = 0; i < MAX_TASK_COUNT; i++){
             Task* ta = &Scheduler::Tasks[i];
-            if(ta->IsAlive){
+            if(ta->State != TaskState::Stopped){
                 if(t == &Scheduler::Tasks[i]){
                     Terminal::Print("%d. Task %d (Profiler), used cpu time: %ld : %f%%", 0, j, j, ta->ID, ta->CpuTime, (float)ta->CpuTime/Time::GetUptime()*100);
                 } else {
@@ -139,6 +141,74 @@ void Profiler(){
         Terminal::Print("Total uptime: %ld", 0, j+1, Time::GetUptime());
 
         Task::Wait(1000);
+    }
+}
+
+void WindowTask1(){
+    DesktopService::Window* window = DesktopService::CreateWindow({CurrentFrame.Width/2, CurrentFrame.Height/2});
+    window->Position = {CurrentFrame.Width/2, 0};
+
+    memset(window->Buffer, 0xff, window->GetSize().X * window->GetSize().Y * PIXEL_SIZE);
+
+    window->DrawString("This is a test", -1, 0, 0, Color::Black, Color::White);
+
+    while(true){
+        window->Update();
+
+        Task::Wait(10000000);
+    }
+
+/*
+    int h = 0;
+    while(true){
+        for(int x = 0; x < window->GetSize().X; x++){
+            Color c = Color::FromHSV((float)x / window->GetSize().X * 360 + h, 1, 1);
+            for(int y = 0; y < window->GetSize().Y; y++){
+                *((uint32_t*)window->Buffer + y * window->GetSize().X + x) = c.ToInt();
+            }
+        }
+        window->Update();
+        h++;
+    }*/
+}
+
+void WindowTask2(){
+    DesktopService::Window* window = DesktopService::CreateWindow({CurrentFrame.Width/2, CurrentFrame.Height/2});
+    window->Position = {CurrentFrame.Width/2, CurrentFrame.Height/2};
+
+    window->DrawString("This is also a test", -1, 0, 0);
+
+    while(true){
+    window->Update();
+
+        Task::Wait(10000000);
+    }
+
+/*
+    int h = 0;
+    while(true){
+        for(int y = 0; y < window->GetSize().Y; y++){
+            Color c = Color::FromHSV((float)y / window->GetSize().Y * 360 + h, 1, 1);
+            for(int x = 0; x < window->GetSize().X; x++){
+                *((uint32_t*)window->Buffer + y * window->GetSize().X + x) = c.ToInt();
+            }
+        }
+        window->Update();
+        h++;
+    }*/
+}
+
+extern "C" cpu_state* save_cpu_state(void);
+
+void DesktopTask(){
+    Task* t = Scheduler::GetCurrentTask();
+
+    while(true){
+        //INT_OFF;
+        //DesktopService::Update();
+        //t->Sleep(20);
+        //asm("int $0x20");
+        Task::Wait(20);
     }
 }
 
@@ -161,13 +231,18 @@ void kernel_main(KernelInfo info){
     Task task1 = Task((void*)&Task1);
     Task task2 = Task((void*)&Task2);
     Task profiler = Task((void*)&Profiler);
+    //Task desktop = Task((void*)&DesktopTask);
 
     Scheduler::StartTask(task1);
     Scheduler::StartTask(task2);
     Scheduler::StartTask(profiler);
+    //Scheduler::StartTask(Task((void*)&WindowTask1));
+    //Scheduler::StartTask(Task((void*)&WindowTask2));
+    //Scheduler::StartTask(desktop);
 
     INT_ON;
-    asm("hlt");
+    
+    while(true);
 
 /*
     void* testBuffer[10000];

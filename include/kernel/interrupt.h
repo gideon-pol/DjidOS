@@ -2,8 +2,8 @@
 #define IDT_H
 
 #include <common/common.h>
-#include <interface.h>
 #include <kernel/io.h>
+#include <interface/interface.h>
 
 #define INT_OFF asm("cli")
 #define INT_ON asm("sti")
@@ -21,11 +21,11 @@
 #define ICW1_ICW4 0x01
 #define ICW4_8086 0x01
 
-typedef struct {
+typedef struct int_frame_t{
     uint64_t r11, r10, r9, r8, rdi, rsi, rbp, rdx, rcx, rax;
     uint32_t int_number, err;
     uint64_t retip, cs, rflags, retrsp, ss;
-} cpu_state __attribute__((packed));
+} int_frame_t __attribute__((packed));
 
 class InterruptTableEntry{
 public:
@@ -54,7 +54,7 @@ namespace InterruptManager{
     void RemapPIC();
     void SetInterruptEntry(uint8_t irq, InterruptTableEntry entry, void (*handler)());
     void SetHandler(uint8_t irq, void (*handler)());
-    cpu_state* HandleInterrupt(cpu_state* state);
+    void HandleInterrupt(int_frame_t* state);
 }
 
 #endif

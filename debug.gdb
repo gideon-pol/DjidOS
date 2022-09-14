@@ -8,8 +8,8 @@ define nub
 end
 
 b Handler0xE
-b Scheduler::ScheduleNext
-b src/kernel/memory/pmm.cpp:30
+b src/kernel/interrupt.cpp:202
+b src/kernel/main.cpp:195
 
 set pagination off
 set logging file gdb.log
